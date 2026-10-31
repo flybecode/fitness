@@ -44,8 +44,8 @@ Ohne Build-Schritt. Einzige Abhängigkeit ist das gebündelte Anthropic-SDK in `
 ## Veröffentlichen
 
 Jeder Push auf `main` veröffentlicht `app/` automatisch über GitHub Pages (`.github/workflows/pages.yml`).
-Vorher `VERSION` in `app/sw.js` erhöhen, sonst zeigt das iPhone weiter die zwischengespeicherte alte Version.
-Das iPhone holt das Update beim nächsten Öffnen der App. Manchmal ist dafür ein zweites Öffnen nötig.
+Online lädt die App jede Datei frisch vom Server. `VERSION` in `app/sw.js` trotzdem erhöhen, damit auch der Offline-Vorrat erneuert wird.
+Das iPhone zeigt Änderungen beim nächsten Öffnen der App.
 
 ## Neue Rezepte
 

@@ -1,6 +1,7 @@
-// Speichert alle App-Dateien für die Offline-Nutzung.
-// Nach Änderungen an der App VERSION erhöhen, damit das iPhone die neuen Dateien lädt.
-const VERSION = 'v4';
+// Offline-Fähigkeit: Online kommt jede Datei frisch vom Server (Netz zuerst),
+// die gespeicherte Kopie springt nur ein, wenn keine Verbindung besteht.
+// VERSION bei Änderungen trotzdem erhöhen, damit der Offline-Vorrat erneuert wird.
+const VERSION = 'v5';
 const CACHE = `fitness-${VERSION}`;
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
@@ -13,8 +14,13 @@ const FILES = [
   './vendor/node-tty.mjs', './vendor/node-async_hooks.mjs',
 ];
 
+// cache: 'reload' umgeht den HTTP-Cache des Browsers, sonst landen bis zu 10 Minuten alte Dateien im Vorrat.
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -27,5 +33,15 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then((hit) => hit || fetch(e.request)));
+  e.respondWith(
+    fetch(e.request, { cache: 'no-cache' })
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request, { ignoreSearch: true })),
+  );
 });
