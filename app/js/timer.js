@@ -34,14 +34,14 @@ function beep() {
 }
 
 export function startRest(seconds) {
-  if (!state.activeWorkout || !seconds) return;
-  state.activeWorkout.restUntil = Date.now() + seconds * 1000;
+  if (!state.live || !seconds) return;
+  state.live.restUntil = Date.now() + seconds * 1000;
   save();
   tick();
 }
 
 export function adjustRest(delta) {
-  const w = state.activeWorkout;
+  const w = state.live;
   if (!w?.restUntil) return;
   w.restUntil = Math.max(Date.now() + 1000, w.restUntil + delta * 1000);
   save();
@@ -49,7 +49,7 @@ export function adjustRest(delta) {
 }
 
 export function stopRest() {
-  if (state.activeWorkout) state.activeWorkout.restUntil = null;
+  if (state.live) state.live.restUntil = null;
   doneUntil = 0;
   save();
   tick();
@@ -61,7 +61,7 @@ function tick() {
   });
 
   const bar = $('#timer');
-  const w = state.activeWorkout;
+  const w = state.live;
   let mode = 'hidden';
   if (w?.restUntil) {
     const left = Math.ceil((w.restUntil - Date.now()) / 1000);

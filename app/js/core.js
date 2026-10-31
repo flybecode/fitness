@@ -24,10 +24,10 @@ export function update() {
 }
 
 export function render() {
-  const hash = location.hash || '#/heute';
+  const hash = location.hash || '#/dashboard';
   if (!state.profile && hash !== '#/start') return location.replace('#/start');
   const route = routes.find((r) => r.re.test(hash));
-  if (!route) return location.replace('#/heute');
+  if (!route) return location.replace('#/dashboard');
 
   $('#view').innerHTML = route.fn(...hash.match(route.re).slice(1).map(decodeURIComponent));
   const tabbar = $('#tabbar');

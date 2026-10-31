@@ -40,38 +40,43 @@ export function toast(msg) {
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
 }
 
-// Fortschrittsring für Kalorien.
-export function ring(value, target, size = 120) {
-  const r = size / 2 - 9;
-  const c = 2 * Math.PI * r;
-  const pct = target ? Math.min(1, value / target) : 0;
-  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
-    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-bg"/>
-    <circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-fg"
-      stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
-  </svg>`;
-}
+// Kopfzeile einer Seite. back: Ziel-Hash für den Zurück-Pfeil.
+export const pageHead = (title, { back, right = '', sub = '' } = {}) => `
+  <header class="head ${back ? 'sub' : ''}">
+    ${back ? `<a class="icon-btn" href="${back}" aria-label="Zurück">${icon('left')}</a>` : ''}
+    <div class="head-title">${sub ? `<p class="label">${sub}</p>` : ''}<h1>${esc(title)}</h1></div>
+    ${right || (back ? '<span class="icon-btn ghost"></span>' : '')}
+  </header>`;
 
-export function macroBar(label, value, target, cls) {
+export const label = (text, right = '') => `<div class="label-row"><p class="label">${text}</p>${right}</div>`;
+
+// overWarn: Überschreiten des Ziels rot markieren (bei Kalorien ja, bei Trainingsvolumen nein).
+export function bar(value, target, { accent = false, overWarn = true } = {}) {
   const pct = target ? Math.min(100, (value / target) * 100) : 0;
+  const over = overWarn && target && value > target * 1.08;
+  return `<div class="bar ${accent ? 'accent' : ''} ${over ? 'over' : ''}"><span style="width:${pct}%"></span></div>`;
+}
+
+export function macroRow(name, value, target, unit = 'g') {
   return `<div class="macro">
-    <div class="macro-head"><span>${label}</span><span class="muted">${num(value)} / ${num(target)} g</span></div>
-    <div class="bar"><span class="${cls}" style="width:${pct}%"></span></div>
+    <div class="macro-head"><span>${name}</span><span class="mono">${num(value)}<span class="muted"> / ${num(target)} ${unit}</span></span></div>
+    ${bar(value, target)}
   </div>`;
 }
 
-// Liniendiagramm als SVG. points: [{ x: 'YYYY-MM-DD', y }]
-export function lineChart(points, { unit = '', digits = 1 } = {}) {
-  if (points.length < 2) {
-    return `<div class="chart-empty muted small">Mindestens zwei Einträge nötig für den Verlauf.</div>`;
-  }
-  const W = 340, H = 170, L = 8, R = 44, T = 14, B = 24;
-  const xs = points.map((p) => new Date(p.x).getTime());
-  const ys = points.map((p) => p.y);
+const fmtD = (iso) => new Date(iso).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+
+// Liniendiagramm. points: [{ x: 'YYYY-MM-DD', y, distorted? }], bands: [{ from, to }] werden schraffiert.
+export function lineChart(points, { unit = '', digits = 1, bands = [], target = null } = {}) {
+  if (points.length < 2) return `<p class="chart-empty muted small">Ab zwei Einträgen erscheint hier der Verlauf.</p>`;
+  const W = 340, H = 160, L = 4, R = 40, T = 10, B = 22;
+  const t = (iso) => new Date(iso).getTime();
+  const xs = points.map((p) => t(p.x));
   const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const ys = points.map((p) => p.y).concat(target != null ? [target] : []);
   let y0 = Math.min(...ys), y1 = Math.max(...ys);
   const pad = (y1 - y0) * 0.15 || 1;
   y0 -= pad;
@@ -79,21 +84,54 @@ export function lineChart(points, { unit = '', digits = 1 } = {}) {
   const sx = (x) => L + ((x - x0) / (x1 - x0 || 1)) * (W - L - R);
   const sy = (y) => T + (1 - (y - y0) / (y1 - y0)) * (H - T - B);
   const path = points.map((p, i) => `${i ? 'L' : 'M'}${sx(xs[i]).toFixed(1)},${sy(p.y).toFixed(1)}`).join('');
-  const area = `${path}L${sx(x1).toFixed(1)},${H - B}L${sx(x0).toFixed(1)},${H - B}Z`;
   const ticks = [y1 - pad, (y0 + y1) / 2, y0 + pad];
-  const last = points[points.length - 1];
-  const d = (iso) => new Date(iso).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+  const bandRects = bands
+    .map((b) => [Math.max(x0, t(b.from)), Math.min(x1, t(b.to))])
+    .filter(([a, b]) => b >= a)
+    .map(([a, b]) => `<rect x="${sx(a)}" y="${T}" width="${Math.max(3, sx(b) - sx(a))}" height="${H - T - B}" class="band"/>`)
+    .join('');
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verlauf">
-    ${ticks.map((t) => `<line x1="${L}" x2="${W - R}" y1="${sy(t)}" y2="${sy(t)}" class="grid"/>
-      <text x="${W - R + 6}" y="${sy(t) + 4}" class="tick">${num(t, digits)}</text>`).join('')}
-    <path d="${area}" class="area"/>
+    <defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" class="hatch"/></pattern></defs>
+    ${bandRects}
+    ${ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}" class="grid"/>
+      <text x="${W - R + 6}" y="${sy(v) + 3.5}" class="tick">${num(v, digits)}</text>`).join('')}
+    ${target != null ? `<line x1="${L}" x2="${W - R}" y1="${sy(target)}" y2="${sy(target)}" class="target"/>` : ''}
     <path d="${path}" class="line"/>
-    <circle cx="${sx(xs[xs.length - 1])}" cy="${sy(last.y)}" r="4" class="dot"/>
-    <text x="${L}" y="${H - 6}" class="tick">${d(points[0].x)}</text>
-    <text x="${W - R}" y="${H - 6}" class="tick" text-anchor="end">${d(last.x)}</text>
+    ${points.map((p, i) => `<circle cx="${sx(xs[i])}" cy="${sy(p.y)}" r="${i === points.length - 1 || p.distorted ? 3.5 : 2.2}" class="${p.distorted ? 'dot hollow' : i === points.length - 1 ? 'dot last' : 'dot'}"/>`).join('')}
+    <text x="${L}" y="${H - 6}" class="tick">${fmtD(points[0].x)}</text>
+    <text x="${W - R}" y="${H - 6}" class="tick" text-anchor="end">${fmtD(points[points.length - 1].x)}</text>
     ${unit ? `<text x="${W - R + 6}" y="${H - 6}" class="tick">${unit}</text>` : ''}
   </svg>`;
 }
 
+export function sparkline(values, { w = 80, h = 24 } = {}) {
+  if (values.length < 2) return `<svg class="spark" viewBox="0 0 ${w} ${h}"><line x1="0" x2="${w}" y1="${h / 2}" y2="${h / 2}" class="spark-flat"/></svg>`;
+  const lo = Math.min(...values), hi = Math.max(...values);
+  const sy = (v) => h - 2 - ((v - lo) / (hi - lo || 1)) * (h - 4);
+  const sx = (i) => (i / (values.length - 1)) * (w - 4) + 2;
+  const d = values.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join('');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}"/><circle cx="${sx(values.length - 1)}" cy="${sy(values[values.length - 1])}" r="2"/></svg>`;
+}
+
+// Säulen pro Woche. rows: [{ label, value, target?, muted? }]
+export function weekBars(rows, { max } = {}) {
+  const top = max ?? Math.max(1, ...rows.map((r) => Math.max(r.value, r.target || 0)));
+  return `<div class="wbars">${rows.map((r) => `
+    <div class="wbar ${r.muted ? 'muted-bar' : ''}" title="${esc(r.label)}">
+      <div class="wbar-col">
+        ${r.target ? `<span class="wbar-target" style="bottom:${(r.target / top) * 100}%"></span>` : ''}
+        <span class="wbar-fill ${r.target && r.value >= r.target ? 'hit' : ''}" style="height:${(r.value / top) * 100}%"></span>
+      </div>
+      <span class="wbar-label">${r.label}</span>
+    </div>`).join('')}</div>`;
+}
+
+export const stepper = (value, { dec, inc, valueHtml, size = '' } = {}) => `
+  <div class="stepper ${size}">
+    <button class="step" data-act="${dec.act}" ${dec.attrs || ''} aria-label="Weniger">${icon('minus')}</button>
+    <div class="step-value">${valueHtml ?? value}</div>
+    <button class="step" data-act="${inc.act}" ${inc.attrs || ''} aria-label="Mehr">${icon('plus')}</button>
+  </div>`;
+
 export const empty = (title, text, actionsHtml = '') =>
-  `<div class="card empty"><h3>${title}</h3><p class="muted">${text}</p>${actionsHtml}</div>`;
+  `<div class="panel empty"><p class="empty-title">${title}</p><p class="muted small">${text}</p>${actionsHtml}</div>`;

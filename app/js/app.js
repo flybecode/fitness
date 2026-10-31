@@ -1,9 +1,9 @@
 import { start } from './core.js';
 import { startTicker } from './timer.js';
-import './views/heute.js';
 import './views/ernaehrung.js';
+import './views/dashboard.js';
 import './views/training.js';
-import './views/koerper.js';
+import './views/progress.js';
 import './views/einstellungen.js';
 
 start();

@@ -47,6 +47,9 @@ export const fmtShort = (iso) => FMT_SHORT.format(parseDate(iso));
 export const fmtDM = (iso) => FMT_DM.format(parseDate(iso));
 export const fmtWD = (iso) => FMT_WD.format(parseDate(iso)).replace('.', '');
 
+export const fmtNum = (iso) => `${Number(iso.slice(8))}.${Number(iso.slice(5, 7))}.`;
+export const weekLabel = (ws) => `KW ${weekNumber(ws)} · ${fmtNum(ws)}–${fmtNum(addDays(ws, 6))}`;
+
 export function relDay(iso) {
   const diff = daysBetween(iso, isoDate());
   if (diff === 0) return 'Heute';

@@ -5,7 +5,7 @@
 export const RECIPES = [
   // Frühstück
   {
-    id: 'overnight-oats', name: 'Overnight Oats mit Beeren & Skyr', cat: 'fruehstueck', diet: 'veg', min: 5,
+    id: 'overnight-oats', name: 'Overnight Oats mit Beeren & Skyr', cat: 'fruehstueck', diet: 'veg', min: 5, prep: true,
     items: [['haferflocken', 60], ['skyr', 150], ['milch', 100], ['beeren', 100], ['chiasamen', 10]],
     steps: ['Haferflocken, Chiasamen, Skyr und Milch verrühren.', 'Über Nacht im Kühlschrank quellen lassen.', 'Morgens mit den Beeren toppen.'],
   },
@@ -47,7 +47,7 @@ export const RECIPES = [
 
   // Hauptgerichte (Mittag & Abend)
   {
-    id: 'haehnchen-reis-bowl', name: 'Hähnchen-Reis-Bowl mit Brokkoli', cat: 'haupt', diet: 'alles', min: 25,
+    id: 'haehnchen-reis-bowl', name: 'Hähnchen-Reis-Bowl mit Brokkoli', cat: 'haupt', diet: 'alles', min: 25, prep: true,
     items: [['haehnchen', 150], ['reis', 75], ['brokkoli', 200], ['olivenoel', 10]],
     extra: 'Sojasauce, Knoblauch, Paprikapulver',
     steps: ['Reis nach Packung kochen.', 'Hähnchen in Würfel schneiden, würzen und in Öl goldbraun braten.', 'Brokkoli 4 Min. dämpfen.', 'Alles in einer Schüssel anrichten, mit Sojasauce abschmecken.'],
@@ -57,7 +57,7 @@ export const RECIPES = [
     items: [['rinderhack', 125], ['nudeln', 90], ['passata', 200], ['zwiebel', 50], ['karotte', 50], ['parmesan', 10], ['olivenoel', 5]],
     extra: 'Knoblauch, Oregano, Salz, Pfeffer',
     steps: ['Zwiebel und Karotte fein würfeln, in Öl anschwitzen.', 'Hack krümelig mitbraten.', 'Passata dazu, würzen und 15 Min. köcheln lassen.', 'Nudeln kochen, mit Sauce und Parmesan servieren.'],
-    batch: true,
+    prep: true,
   },
   {
     id: 'lachs-ofengemuese', name: 'Lachs mit Ofenkartoffeln & Gemüse', cat: 'haupt', diet: 'alles', min: 35,
@@ -67,24 +67,24 @@ export const RECIPES = [
   },
   {
     id: 'linsen-curry', name: 'Rotes Linsen-Curry mit Reis', cat: 'haupt', diet: 'vegan', min: 25,
-    items: [['linsen', 80], ['kokosmilch', 100], ['passata', 150], ['spinat', 100], ['zwiebel', 50], ['reis', 50]],
+    items: [['linsen', 80], ['kokosmilch-light', 100], ['passata', 150], ['spinat', 100], ['zwiebel', 50], ['reis', 50]],
     extra: 'Currypulver, Ingwer, Knoblauch',
     steps: ['Zwiebel, Ingwer und Knoblauch anschwitzen, Curry kurz mitrösten.', 'Linsen, Passata, Kokosmilch und 200 ml Wasser dazu, 12 Min. köcheln.', 'Spinat unterheben. Mit Reis servieren.'],
-    batch: true,
+    prep: true,
   },
   {
     id: 'chili-con-carne', name: 'Chili con Carne', cat: 'haupt', diet: 'alles', min: 35,
     items: [['rinderhack', 125], ['kidney', 120], ['mais', 60], ['passata', 200], ['paprika', 100], ['zwiebel', 50], ['reis', 50]],
     extra: 'Chili, Kreuzkümmel, Paprikapulver',
     steps: ['Zwiebel und Hack anbraten, Gewürze kurz mitrösten.', 'Paprika, Passata, Bohnen und Mais dazu.', '20 Min. köcheln lassen, mit Reis servieren.'],
-    batch: true,
+    prep: true,
   },
   {
     id: 'chili-sin-carne', name: 'Chili sin Carne', cat: 'haupt', diet: 'vegan', min: 30,
     items: [['kidney', 150], ['linsen', 40], ['mais', 80], ['passata', 200], ['paprika', 100], ['zwiebel', 50], ['reis', 50]],
     extra: 'Chili, Kreuzkümmel, Paprikapulver, Kakao',
     steps: ['Zwiebel anschwitzen, Gewürze mitrösten.', 'Linsen, Paprika, Passata und 150 ml Wasser dazu, 15 Min. köcheln.', 'Bohnen und Mais unterheben, mit Reis servieren.'],
-    batch: true,
+    prep: true,
   },
   {
     id: 'puten-wrap', name: 'Puten-Wraps mit Hummus', cat: 'haupt', diet: 'alles', min: 10,
@@ -96,7 +96,7 @@ export const RECIPES = [
     items: [['nudeln', 80], ['thunfisch', 120], ['mais', 60], ['paprika', 100], ['gurke', 100], ['joghurt', 60]],
     extra: 'Zitrone, Senf, Dill',
     steps: ['Nudeln kochen und abschrecken.', 'Gemüse würfeln.', 'Joghurt mit Zitrone, Senf und Dill verrühren.', 'Alles mit dem Thunfisch mischen. Hält sich 2 Tage im Kühlschrank.'],
-    batch: true,
+    prep: true,
   },
   {
     id: 'griechischer-salat', name: 'Griechischer Salat mit Hähnchen', cat: 'haupt', diet: 'alles', min: 15,
@@ -105,13 +105,13 @@ export const RECIPES = [
     steps: ['Hähnchen würzen und braten, in Streifen schneiden.', 'Gemüse grob schneiden, Feta zerbröseln.', 'Mit Öl, Zitrone und Oregano anmachen, mit Brot servieren.'],
   },
   {
-    id: 'tofu-pfanne', name: 'Tofu-Gemüse-Pfanne mit Reis', cat: 'haupt', diet: 'vegan', min: 25,
+    id: 'tofu-pfanne', name: 'Tofu-Gemüse-Pfanne mit Reis', cat: 'haupt', diet: 'vegan', min: 25, prep: true,
     items: [['tofu', 200], ['reis', 70], ['paprika', 120], ['brokkoli', 150], ['olivenoel', 10]],
     extra: 'Sojasauce, Ingwer, Sesam',
     steps: ['Reis kochen.', 'Tofu würfeln und in Öl knusprig braten.', 'Gemüse dazu und bissfest braten.', 'Mit Sojasauce und Ingwer abschmecken.'],
   },
   {
-    id: 'suesskartoffel-bowl', name: 'Süßkartoffel-Kichererbsen-Bowl', cat: 'haupt', diet: 'veg', min: 30,
+    id: 'suesskartoffel-bowl', name: 'Süßkartoffel-Kichererbsen-Bowl', cat: 'haupt', diet: 'veg', min: 30, prep: true,
     items: [['suesskartoffel', 250], ['kichererbsen', 150], ['spinat', 60], ['feta', 30], ['olivenoel', 5]],
     extra: 'Paprikapulver, Kreuzkümmel, Zitrone',
     steps: ['Ofen auf 200 °C vorheizen.', 'Süßkartoffel würfeln, mit Kichererbsen, Öl und Gewürzen 25 Min. rösten.', 'Auf Spinat anrichten, Feta darüberbröseln.'],
@@ -175,7 +175,7 @@ export const RECIPES = [
     steps: ['Gemüse würfeln und unter den Hüttenkäse heben, würzen.'],
   },
   {
-    id: 'eier-gemuesesticks', name: 'Gekochte Eier & Gemüsesticks', cat: 'snack', diet: 'veg', min: 10,
+    id: 'eier-gemuesesticks', name: 'Gekochte Eier & Gemüsesticks', cat: 'snack', diet: 'veg', min: 10, prep: true,
     items: [['ei', 120], ['karotte', 100], ['paprika', 100]],
     steps: ['Eier 9 Min. hart kochen.', 'Gemüse in Sticks schneiden.'],
   },
@@ -185,5 +185,49 @@ export const RECIPES = [
     steps: ['Gemüse in Sticks schneiden und dippen.'],
   },
 ];
+
+// Zusätzliche Mealprep-Gerichte
+RECIPES.push(
+  {
+    id: 'haehnchen-curry', name: 'Hähnchen-Curry mit Reis', cat: 'haupt', diet: 'alles', min: 30, prep: true,
+    items: [['haehnchen', 150], ['kokosmilch-light', 100], ['paprika', 100], ['brokkoli', 100], ['zwiebel', 40], ['reis', 70]],
+    extra: 'Currypaste oder -pulver, Ingwer, Knoblauch',
+    steps: ['Reis kochen.', 'Zwiebel anschwitzen, Hähnchenwürfel anbraten, Curry kurz mitrösten.', 'Gemüse und Kokosmilch dazu, 10 Min. köcheln.', 'Portionsweise mit Reis in Boxen füllen. Hält 4 Tage im Kühlschrank.'],
+  },
+  {
+    id: 'putenhack-pfanne', name: 'Putenhack-Reis-Pfanne', cat: 'haupt', diet: 'alles', min: 25, prep: true,
+    items: [['putenhack', 150], ['reis', 70], ['paprika', 100], ['zucchini', 100], ['tomatenmark', 15], ['olivenoel', 5]],
+    extra: 'Paprikapulver, Kreuzkümmel, Salz',
+    steps: ['Reis kochen.', 'Hack krümelig braten, Tomatenmark und Gewürze mitrösten.', 'Gemüse dazu und bissfest garen.', 'Reis unterheben und portionieren.'],
+  },
+  {
+    id: 'ofen-haehnchen', name: 'Ofen-Hähnchen mit Süßkartoffel & Brokkoli', cat: 'haupt', diet: 'alles', min: 35, prep: true,
+    items: [['haehnchen', 160], ['suesskartoffel', 250], ['brokkoli', 150], ['olivenoel', 8]],
+    extra: 'Paprikapulver, Knoblauchpulver, Salz',
+    steps: ['Ofen auf 200 °C vorheizen.', 'Süßkartoffel würfeln, mit Öl und Gewürzen 15 Min. backen.', 'Hähnchen und Brokkoli dazulegen, weitere 15–18 Min. backen.', 'Abkühlen lassen und portionieren.'],
+  },
+  {
+    id: 'linsen-bolognese', name: 'Linsen-Bolognese', cat: 'haupt', diet: 'vegan', min: 30, prep: true,
+    items: [['linsen', 70], ['passata', 200], ['karotte', 50], ['zwiebel', 50], ['nudeln', 80], ['olivenoel', 5]],
+    extra: 'Knoblauch, Oregano, Salz, Pfeffer',
+    steps: ['Zwiebel und Karotte fein würfeln und anschwitzen.', 'Linsen, Passata und 200 ml Wasser dazu, 15 Min. köcheln.', 'Nudeln kochen und mit der Sauce servieren.'],
+  },
+  {
+    id: 'tofu-erdnuss', name: 'Räuchertofu-Erdnuss-Bowl', cat: 'haupt', diet: 'vegan', min: 25, prep: true,
+    items: [['raeuchertofu', 180], ['edamame', 80], ['reis', 60], ['brokkoli', 120], ['erdnussbutter', 15], ['sojasauce', 15]],
+    extra: 'Limette, Chili, Sesam',
+    steps: ['Reis kochen.', 'Tofu würfeln und knusprig braten.', 'Brokkoli und Edamame 4 Min. dämpfen.', 'Erdnussbutter mit Sojasauce, Limette und etwas Wasser zu einer Sauce rühren und darübergeben.'],
+  },
+  {
+    id: 'protein-oats', name: 'Protein-Overnight-Oats (für mehrere Tage)', cat: 'fruehstueck', diet: 'veg', min: 5, prep: true,
+    items: [['haferflocken', 60], ['skyr', 150], ['milch', 100], ['whey', 15], ['beeren', 80]],
+    steps: ['Alles außer den Beeren verrühren und auf Gläser verteilen.', 'Im Kühlschrank halten sich die Gläser 3–4 Tage.', 'Morgens Beeren darauf.'],
+  },
+  {
+    id: 'pudding-beeren', name: 'Proteinpudding mit Beeren', cat: 'snack', diet: 'veg', min: 1,
+    items: [['proteinpudding', 200], ['beeren', 80]],
+    steps: ['Beeren auf den Pudding geben.'],
+  },
+);
 
 export const RECIPE_BY_ID = Object.fromEntries(RECIPES.map((r) => [r.id, r]));
