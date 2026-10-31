@@ -54,17 +54,43 @@ export const pageHead = (title, { back, right = '', sub = '' } = {}) => `
 export const label = (text, right = '') => `<div class="label-row"><p class="label">${text}</p>${right}</div>`;
 
 // overWarn: Überschreiten des Ziels rot markieren (bei Kalorien ja, bei Trainingsvolumen nein).
-export function bar(value, target, { accent = false, overWarn = true } = {}) {
+// tone: Farbe des Balkens (p = Protein, c = Kohlenhydrate, f = Fett, k = Kalorien).
+export function bar(value, target, { accent = false, overWarn = true, tone = '' } = {}) {
   const pct = target ? Math.min(100, (value / target) * 100) : 0;
   const over = overWarn && target && value > target * 1.08;
-  return `<div class="bar ${accent ? 'accent' : ''} ${over ? 'over' : ''}"><span style="width:${pct}%"></span></div>`;
+  return `<div class="bar ${tone} ${accent ? 'accent' : ''} ${over ? 'over' : ''}"><span style="width:${pct}%"></span></div>`;
 }
 
-export function macroRow(name, value, target, unit = 'g') {
+export function macroRow(name, value, target, unit = 'g', tone = '') {
   return `<div class="macro">
     <div class="macro-head"><span>${name}</span><span class="mono">${num(value)}<span class="muted"> / ${num(target)} ${unit}</span></span></div>
-    ${bar(value, target)}
+    ${bar(value, target, { tone })}
   </div>`;
+}
+
+// Fortschrittsring mit Inhalt in der Mitte. pct: 0..1
+export function ring(pct, inner, { size = 96, stroke = 10, color = 'var(--red)' } = {}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(1, pct || 0));
+  return `<div class="ring-wrap" style="width:${size}px;height:${size}px">
+    <svg class="ring" viewBox="0 0 ${size} ${size}" aria-hidden="true">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-bg" stroke-width="${stroke}"/>
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-fg" stroke="${color}" stroke-width="${stroke}"
+        stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>
+    </svg>
+    <div class="ring-label">${inner}</div>
+  </div>`;
+}
+
+// Farbiges Icon-Kästchen für Kacheln. tone: red | orange | green | blue
+export const badge = (name, tone = 'red') => `<span class="badge-ic bi-${tone}">${icon(name)}</span>`;
+
+// Aufteilung der Kalorien auf Protein / Kohlenhydrate / Fett als farbiger Streifen.
+export function macroSplit(p, c, f) {
+  const kp = p * 4, kc = c * 4, kf = f * 9;
+  const sum = kp + kc + kf || 1;
+  return `<div class="split" aria-hidden="true"><span style="flex:${kp / sum}"></span><span style="flex:${kc / sum}"></span><span style="flex:${kf / sum}"></span></div>`;
 }
 
 const fmtD = (iso) => new Date(iso).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });

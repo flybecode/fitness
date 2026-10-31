@@ -10,7 +10,7 @@ import { searchOff } from '../off.js';
 import { importRecipe, ImportError } from '../ai.js';
 import { prepareImage } from '../photos.js';
 import { icon } from '../icons.js';
-import { openSheet, closeSheet, sheetHead, toast, pageHead, label, macroRow, stepper, empty } from '../ui.js';
+import { openSheet, closeSheet, sheetHead, toast, pageHead, label, macroRow, stepper, empty, badge, macroSplit } from '../ui.js';
 
 // Ab Samstag wird schon für die kommende Woche geplant.
 const planningWeek = () => {
@@ -66,15 +66,16 @@ defineRoute(/^#\/ernaehrung$/, () => {
   <section class="panel">
     ${label(`Tagesziel · ${esc(t.goal.label)}`, '<a class="link" href="#/einstellungen">Ändern</a>')}
     <p class="big">${num(t.kcal)}<span class="unit">kcal</span></p>
+    ${macroSplit(t.protein, t.carbs, t.fat)}
     <div class="cells cells3">
-      <div><p class="label">Protein</p><p class="val">${num(t.protein)} g</p></div>
-      <div><p class="label">Kohlenh.</p><p class="val">${num(t.carbs)} g</p></div>
-      <div><p class="label">Fett</p><p class="val">${num(t.fat)} g</p></div>
+      <div class="dot-p"><p class="label">Protein</p><p class="val">${num(t.protein)} g</p></div>
+      <div class="dot-c"><p class="label">Kohlenh.</p><p class="val">${num(t.carbs)} g</p></div>
+      <div class="dot-f"><p class="label">Fett</p><p class="val">${num(t.fat)} g</p></div>
     </div>
   </section>
 
   <section class="panel">
-    ${label('Leitfaden')}
+    <div class="stat-head">${badge('bulb', 'orange')}<p class="label">Leitfaden</p></div>
     <p class="lead">${g.meals} Mahlzeiten mit je ca. <b class="mono">${num(g.perMeal.kcal)} kcal</b> und <b class="mono">${g.perMeal.p} g Protein</b>.</p>
     <ol class="rules">${g.rules.map((r) => `<li>${r}</li>`).join('')}</ol>
   </section>
@@ -122,11 +123,12 @@ defineRoute(/^#\/ernaehrung\/rezept\/([\w-]+)$/, (id) => {
   ${pageHead(r.name, { back: '#/ernaehrung', sub: [CATS[r.cat], r.min ? `${r.min} Min.` : '', r.prep ? 'Mealprep' : ''].filter(Boolean).join(' · ') })}
   <section class="panel">
     ${label('Pro Portion')}
+    ${macroSplit(per.p, per.c, per.f)}
     <div class="cells cells4">
       <div><p class="label">kcal</p><p class="val">${num(per.kcal)}</p></div>
-      <div><p class="label">Protein</p><p class="val">${num(per.p)} g</p></div>
-      <div><p class="label">KH</p><p class="val">${num(per.c)} g</p></div>
-      <div><p class="label">Fett</p><p class="val">${num(per.f)} g</p></div>
+      <div class="dot-p"><p class="label">Prot.</p><p class="val">${num(per.p)} g</p></div>
+      <div class="dot-c"><p class="label">KH</p><p class="val">${num(per.c)} g</p></div>
+      <div class="dot-f"><p class="label">Fett</p><p class="val">${num(per.f)} g</p></div>
     </div>
   </section>
   <section class="panel">
@@ -338,10 +340,10 @@ defineRoute(/^#\/ernaehrung\/rechner$/, () => {
     <p class="verdict">${v.ok ? 'Passt zu deinen Zielen.' : 'Nicht ganz im Ziel.'}</p>
     <ul class="notes">${v.notes.map((n) => `<li class="${n.ok ? 'ok' : 'warn'}">${n.text}</li>`).join('')}</ul>
     <div class="stack mt">
-      ${macroRow('Kalorien', v.sum.kcal, t.kcal, 'kcal')}
-      ${macroRow('Protein', v.sum.p, t.protein)}
-      ${macroRow('Kohlenhydrate', v.sum.c, t.carbs)}
-      ${macroRow('Fett', v.sum.f, t.fat)}
+      ${macroRow('Kalorien', v.sum.kcal, t.kcal, 'kcal', 'k')}
+      ${macroRow('Protein', v.sum.p, t.protein, 'g', 'p')}
+      ${macroRow('Kohlenhydrate', v.sum.c, t.carbs, 'g', 'c')}
+      ${macroRow('Fett', v.sum.f, t.fat, 'g', 'f')}
     </div>
   </section>` : ''}`;
 }, 'ernaehrung');

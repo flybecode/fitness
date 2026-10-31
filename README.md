@@ -23,7 +23,7 @@ Dann <http://localhost:8790> öffnen.
 ```
 app/
   index.html, manifest.webmanifest, sw.js   PWA-Hülle und Offline-Cache
-  css/app.css                               Design (schwarz, weiße Linien, Rot)
+  css/app.css                               Design (dunkel, iOS-Stil, Rot als Akzent)
   js/core.js                                Router und Event-Delegation (data-act, data-change, …)
   js/store.js                               Datenhaltung (localStorage, Key fitness-app-v1)
   js/nutrition.js                           Bedarf, Leitfaden, Rezepte, Woche, Einkaufsliste, Tagesrechner

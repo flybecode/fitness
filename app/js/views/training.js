@@ -8,7 +8,7 @@ import {
 } from '../training.js';
 import { startRest, stopRest, adjustRest, unlockAudio } from '../timer.js';
 import { icon } from '../icons.js';
-import { openSheet, closeSheet, sheetHead, toast, pageHead, label, bar, lineChart, sparkline, weekBars, stepper, empty } from '../ui.js';
+import { openSheet, closeSheet, sheetHead, toast, pageHead, label, bar, lineChart, sparkline, weekBars, stepper, empty, ring, badge } from '../ui.js';
 
 let ws = weekStart(isoDate());
 let picker = null; // { mode: 'unit', unitId } | { mode: 'live' }
@@ -47,15 +47,14 @@ export function liveBanner() {
 export function todayAction() {
   const d = todayInfo();
   if (state.live) return liveBanner();
-  if (d.done.length) return `<a class="panel today-card" href="#/training/verlauf/${d.done[0].id}"><div><p class="label">Heute</p><p class="row-title">${esc(d.done[0].name)} erledigt</p></div>${icon('check', 'accent')}</a>`;
-  if (d.brk) return `<div class="panel today-card"><div><p class="label">Heute</p><p class="row-title">Pause${d.brk.note ? `: ${esc(d.brk.note)}` : ''}</p></div></div>`;
+  if (d.done.length) return `<a class="panel today-card" href="#/training/verlauf/${d.done[0].id}"><div>${badge('check', 'green')}<div><p class="label">Heute erledigt</p><p class="row-title">${esc(d.done[0].name)}</p></div></div>${icon('right', 'muted')}</a>`;
+  if (d.brk) return `<div class="panel today-card"><div>${badge('calendar', 'blue')}<div><p class="label">Heute</p><p class="row-title">Pause${d.brk.note ? `: ${esc(d.brk.note)}` : ''}</p></div></div></div>`;
   if (d.planned) {
-    return `<div class="panel today-card"><div><p class="label">Heute</p><p class="row-title">${esc(d.planned.name)}</p>
-      <p class="muted small">${d.planned.items.length} Übungen</p></div>
-      <button class="btn primary" data-act="startUnit" data-id="${d.planned.id}">Starten</button></div>`;
+    return `<div class="panel today-card"><div>${badge('dumbbell', 'red')}<div><p class="label">Heute · ${d.planned.items.length} Übungen</p><p class="row-title">${esc(d.planned.name)}</p></div></div>
+      <button class="btn primary small" data-act="startUnit" data-id="${d.planned.id}">Starten</button></div>`;
   }
-  return `<div class="panel today-card"><div><p class="label">Heute</p><p class="row-title">Ruhetag</p></div>
-    <button class="btn" data-act="startPicker">Trotzdem trainieren</button></div>`;
+  return `<div class="panel today-card"><div>${badge('calendar', 'blue')}<div><p class="label">Heute</p><p class="row-title">Ruhetag</p></div></div>
+    <button class="btn small" data-act="startPicker">Trainieren</button></div>`;
 }
 
 export function balancePanel({ compact = false } = {}) {
@@ -63,9 +62,15 @@ export function balancePanel({ compact = false } = {}) {
   if (bal.score == null) {
     return `<section class="panel">${label('Muskelbalance')}<p class="muted small">Leg Einheiten an und verteile sie auf feste Wochentage – dann bewertet die App, ob alle Muskelgruppen genug Training bekommen.</p></section>`;
   }
+  const ok = bal.rows.filter((r) => r.pct >= 1).length;
+  const gaps = bal.rows.filter((r) => r.pct < 0.5).map((r) => r.id);
   return `<section class="panel">
-    ${label('Muskelbalance', '<span class="label muted">Sätze / Woche</span>')}
-    <p class="big">${bal.score}<span class="unit">%</span></p>
+    <div class="hero">
+      ${ring(bal.score / 100, `<b>${bal.score}%</b><span>Balance</span>`, { size: 104, color: bal.score >= 80 ? 'var(--green)' : bal.score >= 50 ? 'var(--orange)' : 'var(--red)' })}
+      <div><p class="row-title">Muskelbalance</p>
+        <p class="muted small">${ok} von ${bal.rows.length} Muskelgruppen erreichen ihr Wochenziel.</p>
+        ${gaps.length ? `<p class="small accent mt">Zu wenig: ${gaps.join(', ')}</p>` : ''}</div>
+    </div>
     ${compact ? '' : `<div class="balance">${bal.rows.map((r) => `
       <div class="bal-row ${r.sets === 0 ? 'gap' : ''}"><span>${r.id}</span>${bar(r.sets, r.target, { accent: r.pct < 0.5, overWarn: false })}<span class="mono">${num(r.sets, 1)}/${r.target}</span></div>`).join('')}</div>`}
   </section>`;
