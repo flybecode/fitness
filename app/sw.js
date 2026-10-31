@@ -1,6 +1,6 @@
 // Speichert alle App-Dateien für die Offline-Nutzung.
 // Nach Änderungen an der App VERSION erhöhen, damit das iPhone die neuen Dateien lädt.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `fitness-${VERSION}`;
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
