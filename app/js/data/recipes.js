@@ -261,4 +261,7 @@ RECIPES.push(
   },
 );
 
+// Fotos von Unsplash (frei nutzbar, Unsplash-Lizenz), 640×480; Herkunft in img/rezepte/QUELLEN.md.
+for (const r of RECIPES) r.photo = `img/rezepte/${r.id}.jpg`;
+
 export const RECIPE_BY_ID = Object.fromEntries(RECIPES.map((r) => [r.id, r]));

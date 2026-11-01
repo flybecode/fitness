@@ -36,9 +36,9 @@ const kcalP = (m) => `<span class="mono">${num(m.kcal)} kcal · ${num(m.p)} g P<
 
 // --- Übersicht -------------------------------------------------------------------
 
-// Bildfläche eines Rezepts: eigenes Foto oder farbiges Icon passend zum Gericht.
+// Bildfläche eines Rezepts: Foto (mitgeliefert oder eigenes) oder farbiges Icon passend zum Gericht.
 export function recipeImage(r, cls = '') {
-  if (r.photo) return `<div class="rimg ${cls}"><img src="${r.photo}" alt=""></div>`;
+  if (r.photo) return `<div class="rimg ${cls}"><img src="${r.photo}" alt="" loading="lazy" decoding="async"></div>`;
   const v = recipeVisual(r);
   return `<div class="rimg t-${v.tone} ${cls}">${icon(v.icon)}</div>`;
 }
