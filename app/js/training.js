@@ -97,7 +97,7 @@ export function tip(exId, reps, sets) {
   const ex = getExercise(exId);
   const { min, max } = parseReps(reps);
   const last = lastPerformance(exId);
-  const reps = ex.timed ? 'Sekunden' : 'Wiederholungen';
+  const unitWord = ex.timed ? 'Sekunden' : 'Wiederholungen';
   if (!last) {
     if (ex.eq === 'bw') return { dir: 'new', w: null, text: ex.timed ? `Erstes Mal: Halte ${min}–${max} Sekunden.` : `Erstes Mal: ${min}–${max} saubere Wiederholungen schaffen.` };
     return { dir: 'new', w: null, text: `Erstes Mal: Wähle ein Gewicht, mit dem du ${max} saubere Wiederholungen schaffst.` };
@@ -110,7 +110,7 @@ export function tip(exId, reps, sets) {
     const allHit = work.length >= sets && work.every((s) => s.r >= max);
     return allHit
       ? { dir: 'up', w: null, text: ex.timed ? `Letztes Mal alle Sätze ${max}+ Sekunden → heute länger halten.` : `Letztes Mal alle Sätze mit ${max}+ Wdh. → mehr Wiederholungen oder etwas Zusatzgewicht.` }
-      : { dir: 'hold', w: null, text: `${reps} steigern (Ziel ${min}–${max}).` };
+      : { dir: 'hold', w: null, text: `${unitWord} steigern (Ziel ${min}–${max}).` };
   }
   if (inc && work.length >= sets && work.every((s) => s.r >= max)) {
     return { dir: 'up', w: top + inc, text: `Letztes Mal alle Sätze mit ${max}+ Wdh. → heute ${fmtKg(top + inc)} probieren.` };

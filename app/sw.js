@@ -1,7 +1,7 @@
 // Offline-Fähigkeit: Online kommt jede Datei frisch vom Server (Netz zuerst),
 // die gespeicherte Kopie springt nur ein, wenn keine Verbindung besteht.
 // VERSION bei Änderungen trotzdem erhöhen, damit der Offline-Vorrat erneuert wird.
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = `fitness-${VERSION}`;
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
