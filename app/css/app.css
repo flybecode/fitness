@@ -494,3 +494,84 @@ form.row-item input { background: transparent !important; padding-left: 0 !impor
   .cells4 { grid-template-columns: repeat(2, 1fr); }
   .big { font-size: 34px; }
 }
+
+/* Filter-Chips: kompakt, seitlich scrollbar, angeschnittener Rand zeigt, dass es weitergeht */
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 10px -16px 6px; padding: 0 16px; scroll-padding: 0 16px; }
+.chips::-webkit-scrollbar { display: none; }
+.chips.wrap { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; }
+.chip { flex: none; border: 0; background: var(--card); color: var(--text); border-radius: 18px; padding: 8px 14px; font-size: 14.5px; font-weight: 500; white-space: nowrap; }
+.panel .chip { background: var(--card-2); }
+.chip.on { background: var(--text); color: #000; }
+.hint-line { margin: 0 4px 10px; }
+
+/* Rezeptkacheln */
+.rgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.rtile { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.rtile > a { display: flex; flex-direction: column; height: 100%; color: inherit; }
+.rimg { aspect-ratio: 4 / 3; display: grid; place-items: center; position: relative; overflow: hidden; }
+.rimg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rimg .ic { width: 46px; height: 46px; stroke-width: 1.5; }
+.t-orange { background: radial-gradient(circle at 30% 20%, rgba(255, 159, 10, 0.32), rgba(255, 159, 10, 0.08)); color: var(--orange); }
+.t-yellow { background: radial-gradient(circle at 30% 20%, rgba(255, 214, 10, 0.3), rgba(255, 214, 10, 0.07)); color: var(--yellow); }
+.t-green { background: radial-gradient(circle at 30% 20%, rgba(48, 209, 88, 0.3), rgba(48, 209, 88, 0.07)); color: var(--green); }
+.t-blue { background: radial-gradient(circle at 30% 20%, rgba(100, 210, 255, 0.3), rgba(100, 210, 255, 0.07)); color: var(--blue); }
+.t-red { background: radial-gradient(circle at 30% 20%, rgba(255, 69, 58, 0.32), rgba(255, 69, 58, 0.08)); color: var(--red); }
+.rbody { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.rname { font-size: 15px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rmeta { font-size: 12.5px; color: var(--muted); margin-top: auto; }
+.rmeta b { color: var(--text); font-weight: 600; }
+.rtag { position: absolute; left: 8px; top: 8px; font-size: 11px; font-weight: 600; background: rgba(0, 0, 0, 0.55); color: #fff; padding: 3px 8px; border-radius: 8px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.radd { position: absolute; right: 8px; top: 8px; width: 32px; height: 32px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(0, 0, 0, 0.55); color: #fff; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.radd .ic { width: 17px; height: 17px; }
+.radd.on { background: var(--red); }
+.hero-img { border-radius: var(--r); margin-bottom: 12px; aspect-ratio: 16 / 9; }
+.hero-img .ic { width: 64px; height: 64px; }
+
+/* Formularzeilen im iOS-Stil */
+.form-rows { display: flex; flex-direction: column; }
+.frow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 54px; padding: 8px 16px; background: none; border: 0; width: 100%; text-align: left; font-size: 16px; color: var(--text); position: relative; cursor: pointer; }
+.frow + .frow::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px; background: var(--sep); }
+.switch { width: 51px; height: 31px; border-radius: 16px; background: var(--card-3); position: relative; flex: none; transition: background 0.2s; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+.switch.on { background: var(--green); }
+.switch.on::after { transform: translateX(20px); }
+.mini-photo { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
+
+/* Tagesrechner */
+.meal-input textarea { min-height: 84px; }
+.btn.icon-only { width: 50px; padding: 0; flex: none; }
+.center-links { justify-content: center; gap: 18px; margin: 4px 0 8px; }
+.quiet-link > span { display: flex; align-items: center; gap: 8px; color: var(--text); }
+.quiet-link > span .ic { color: var(--red); }
+
+/* Wochenkalender zum Wischen */
+.cal { padding: 14px 0 14px; }
+.cal > .row { padding: 0 16px; }
+.wscroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; position: relative; }
+.wscroll::-webkit-scrollbar { display: none; }
+.wk { flex: 0 0 100%; scroll-snap-align: start; padding: 0 16px; }
+.wk-title { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.wk-title .muted { font-size: 13px; font-weight: 500; }
+
+/* Einklappbare Kacheln */
+.coll { padding: 0; }
+.coll-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; background: none; border: 0; padding: 14px 16px; color: var(--text); text-align: left; }
+.coll-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+.coll-title .count { font-size: 13px; font-weight: 600; color: var(--muted); background: var(--card-2); border-radius: 10px; padding: 1px 8px; }
+.coll-ic { color: var(--muted); transition: transform 0.2s; }
+.coll.open .coll-ic { transform: rotate(180deg); }
+.coll-body { display: none; padding: 0 16px 16px; }
+.coll.open .coll-body { display: block; }
+.coll.flush-body .coll-body { padding: 0 0 4px; }
+.sub-coll { margin-top: 14px; }
+.sub-coll summary { list-style: none; display: flex; align-items: center; justify-content: space-between; font-size: 14.5px; font-weight: 500; color: var(--muted); cursor: pointer; padding: 6px 0; }
+.sub-coll summary::-webkit-details-marker { display: none; }
+.sub-coll[open] summary .coll-ic { transform: rotate(180deg); }
+.sub-coll .balance { margin-top: 8px; }
+.bi-yellow { background: rgba(255, 214, 10, 0.16); color: var(--yellow); }
+.bi-purple { background: rgba(191, 90, 242, 0.18); color: #bf5af2; }
+.tile-top { display: flex; align-items: center; gap: 8px; }
+.row-item > .badge-ic { margin-right: -2px; }
+button.opt { background: none; border: 0; padding: 0; text-align: left; width: 100%; color: var(--text); }
+.panel.coll.flush-body .row-item { padding-left: 16px; padding-right: 16px; }
+.panel.coll.flush-body .row-item::before { left: 16px; }

@@ -2,15 +2,15 @@ import { defineRoute, defineActions, update, go, render } from '../core.js';
 import { state, save } from '../store.js';
 import { esc, num, uid, isoDate, weekStart, addDays, weekNumber, weekLabel, fmtDM, fmtLong, parseNum, relDay } from '../util.js';
 import {
-  targets, guide, food, searchFoods, formatAmount, itemsMacros, allRecipes, recipe, isOwn, servings,
-  recipeMacros, proteinDensity, dietOk, weekList, weekTotals, shoppingList, dayEntries, dayVerdict, CATS,
+  targets, food, searchFoods, formatAmount, itemsMacros, allRecipes, recipe, isOwn, servings,
+  recipeMacros, proteinDensity, dietOk, weekList, weekTotals, shoppingList, dayEntries, dayVerdict, CATS, recipeVisual,
 } from '../nutrition.js';
 import { FOODS } from '../data/foods.js';
 import { searchOff } from '../off.js';
-import { importRecipe, ImportError } from '../ai.js';
+import { importRecipe, estimateMeal, ImportError } from '../ai.js';
 import { prepareImage } from '../photos.js';
 import { icon } from '../icons.js';
-import { openSheet, closeSheet, sheetHead, toast, pageHead, label, macroRow, stepper, empty, badge, macroSplit } from '../ui.js';
+import { openSheet, closeSheet, sheetHead, toast, pageHead, label, macroRow, stepper, empty, macroSplit } from '../ui.js';
 
 // Ab Samstag wird schon für die kommende Woche geplant.
 const planningWeek = () => {
@@ -27,11 +27,21 @@ let importing = false;
 let importError = '';
 let calcDate = isoDate();
 let picker = null; // { mode: 'draft' | 'calc', results, offResults, offState }
+let mealText = '';
+let estimating = false;
+let estimateError = '';
 
-const FILTERS = { alle: 'Alle', prep: 'Mealprep', fruehstueck: 'Frühstück', haupt: 'Haupt', snack: 'Snack', eigene: 'Eigene' };
+const FILTERS = { alle: 'Alle', prep: 'Mealprep', fruehstueck: 'Frühstück', haupt: 'Hauptgerichte', snack: 'Snacks', shake: 'Shakes', eigene: 'Eigene' };
 const kcalP = (m) => `<span class="mono">${num(m.kcal)} kcal · ${num(m.p)} g P</span>`;
 
 // --- Übersicht -------------------------------------------------------------------
+
+// Bildfläche eines Rezepts: eigenes Foto oder farbiges Icon passend zum Gericht.
+export function recipeImage(r, cls = '') {
+  if (r.photo) return `<div class="rimg ${cls}"><img src="${r.photo}" alt=""></div>`;
+  const v = recipeVisual(r);
+  return `<div class="rimg t-${v.tone} ${cls}">${icon(v.icon)}</div>`;
+}
 
 function recipeRows() {
   const q = query.trim().toLowerCase();
@@ -44,20 +54,24 @@ function recipeRows() {
   const inWeek = new Set(weekList(ws).map((e) => e.r));
   return list.map((r) => {
     const m = recipeMacros(r);
-    const tags = [r.prep && 'Mealprep', isOwn(r) && 'Eigenes', r.diet === 'vegan' && 'Vegan'].filter(Boolean);
-    return `<div class="row-item">
-      <a class="row-main" href="#/ernaehrung/rezept/${r.id}">
-        <span class="row-title">${esc(r.name)}</span>
-        <span class="row-sub">${kcalP(m)}${tags.length ? ` <span class="tags">${tags.map((t) => `<i>${t}</i>`).join('')}</span>` : ''}</span>
+    const tag = isOwn(r) ? 'Eigenes' : r.prep ? 'Mealprep' : r.diet === 'vegan' ? 'Vegan' : '';
+    const on = inWeek.has(r.id);
+    return `<div class="rtile">
+      <a href="#/ernaehrung/rezept/${r.id}">
+        ${recipeImage(r)}
+        <div class="rbody">
+          <p class="rname">${esc(r.name)}</p>
+          <p class="rmeta"><b>${num(m.kcal)}</b> kcal · <b>${num(m.p)} g</b> Protein</p>
+        </div>
+        ${tag ? `<span class="rtag">${tag}</span>` : ''}
       </a>
-      <button class="icon-btn ${inWeek.has(r.id) ? 'on' : ''}" data-act="quickAdd" data-id="${r.id}" aria-label="Zur Woche">${icon(inWeek.has(r.id) ? 'check' : 'plus')}</button>
+      <button class="radd ${on ? 'on' : ''}" data-act="quickAdd" data-id="${r.id}" aria-label="${on ? 'Aus der Woche entfernen' : 'Zur Woche hinzufügen'}">${icon(on ? 'check' : 'plus')}</button>
     </div>`;
   }).join('');
 }
 
 defineRoute(/^#\/ernaehrung$/, () => {
   const t = targets();
-  const g = guide(t);
   const list = weekList(ws);
   const tot = weekTotals(ws);
   const open = shoppingList(ws).reduce((s, gr) => s + gr.items.length, 0) - (state.shopChecked[ws]?.length || 0);
@@ -72,12 +86,6 @@ defineRoute(/^#\/ernaehrung$/, () => {
       <div class="dot-c"><p class="label">Kohlenh.</p><p class="val">${num(t.carbs)} g</p></div>
       <div class="dot-f"><p class="label">Fett</p><p class="val">${num(t.fat)} g</p></div>
     </div>
-  </section>
-
-  <section class="panel">
-    <div class="stat-head">${badge('bulb', 'orange')}<p class="label">Leitfaden</p></div>
-    <p class="lead">${g.meals} Mahlzeiten mit je ca. <b class="mono">${num(g.perMeal.kcal)} kcal</b> und <b class="mono">${g.perMeal.p} g Protein</b>.</p>
-    <ol class="rules">${g.rules.map((r) => `<li>${r}</li>`).join('')}</ol>
   </section>
 
   <section class="panel">
@@ -102,11 +110,11 @@ defineRoute(/^#\/ernaehrung$/, () => {
 
   <div class="label-row section"><p class="label">Rezepte</p><a class="link" href="#/ernaehrung/neu">${icon('plus')} Eigenes Rezept</a></div>
   <label class="search">${icon('search')}<input type="search" placeholder="Rezept suchen" value="${esc(query)}" data-input="recipeSearch" autocomplete="off"></label>
-  <div class="seg scroll">${Object.entries(FILTERS).map(([k, l]) => `<button class="${k === filter ? 'on' : ''}" data-act="recipeFilter" data-k="${k}">${l}</button>`).join('')}</div>
-  <p class="muted small">Sortiert nach Protein pro Kalorie · Werte pro Portion</p>
-  <div class="panel flush rows" id="recipe-list">${recipeRows()}</div>
+  <div class="chips">${Object.entries(FILTERS).map(([k, l]) => `<button class="chip ${k === filter ? 'on' : ''}" data-act="recipeFilter" data-k="${k}">${l}</button>`).join('')}</div>
+  <p class="muted small hint-line">Sortiert nach Protein pro Kalorie · Werte pro Portion</p>
+  <div class="rgrid" id="recipe-list">${recipeRows()}</div>
 
-  <a class="quiet-link" href="#/ernaehrung/rechner">Tagesrechner: prüfen, ob ein Tag zu deinen Zielen passt ${icon('arrowRight')}</a>`;
+  <a class="quiet-link" href="#/ernaehrung/rechner"><span>${icon('sparkles')} Tagesrechner: Was hast du heute gegessen?</span>${icon('right')}</a>`;
 }, 'ernaehrung');
 
 // --- Rezept-Detail -----------------------------------------------------------------
@@ -121,6 +129,7 @@ defineRoute(/^#\/ernaehrung\/rezept\/([\w-]+)$/, (id) => {
   const k = n / servings(r);
   return `
   ${pageHead(r.name, { back: '#/ernaehrung', sub: [CATS[r.cat], r.min ? `${r.min} Min.` : '', r.prep ? 'Mealprep' : ''].filter(Boolean).join(' · ') })}
+  ${recipeImage(r, 'hero-img')}
   <section class="panel">
     ${label('Pro Portion')}
     ${macroSplit(per.p, per.c, per.f)}
@@ -147,8 +156,8 @@ defineRoute(/^#\/ernaehrung\/rezept\/([\w-]+)$/, (id) => {
 
 function newDraft(r) {
   return r
-    ? { id: r.id, name: r.name, cat: r.cat, servings: servings(r), min: r.min || 0, prep: !!r.prep, items: r.items.map((x) => [...x]), extra: r.extra || '', steps: (r.steps || []).join('\n') }
-    : { id: null, name: '', cat: 'haupt', servings: 4, min: 0, prep: true, items: [], extra: '', steps: '' };
+    ? { id: r.id, name: r.name, cat: r.cat, servings: servings(r), min: r.min || 0, prep: !!r.prep, photo: r.photo || null, items: r.items.map((x) => [...x]), extra: r.extra || '', steps: (r.steps || []).join('\n') }
+    : { id: null, name: '', cat: 'haupt', servings: 4, min: 0, prep: true, photo: null, items: [], extra: '', steps: '' };
 }
 
 function editorView(isNew) {
@@ -171,12 +180,15 @@ function editorView(isNew) {
 
   <section class="panel stack">
     <label class="field"><span class="label">Name</span><input value="${esc(draft.name)}" data-change="draftField" data-f="name" placeholder="z. B. Chili mit Pute"></label>
-    <div class="seg">${Object.entries(CATS).map(([k, l]) => `<button class="${draft.cat === k ? 'on' : ''}" data-act="draftCat" data-k="${k}">${l}</button>`).join('')}</div>
-    <div class="cells cells3 tight">
-      <div><p class="label">Portionen</p>${stepper(draft.servings, { dec: { act: 'draftServings', attrs: 'data-d="-1"' }, inc: { act: 'draftServings', attrs: 'data-d="1"' }, size: 'sm' })}</div>
-      <label class="field"><span class="label">Minuten</span><input inputmode="numeric" value="${draft.min || ''}" data-change="draftField" data-f="min"></label>
-      <button class="toggle ${draft.prep ? 'on' : ''}" data-act="draftPrep"><span class="label">Mealprep</span><span class="mono">${draft.prep ? 'JA' : 'NEIN'}</span></button>
-    </div>
+    <div class="chips wrap">${Object.entries(CATS).map(([k, l]) => `<button class="chip ${draft.cat === k ? 'on' : ''}" data-act="draftCat" data-k="${k}">${l}</button>`).join('')}</div>
+  </section>
+
+  <section class="panel flush form-rows">
+    <div class="frow"><span>Portionen</span>${stepper(draft.servings, { dec: { act: 'draftServings', attrs: 'data-d="-1"' }, inc: { act: 'draftServings', attrs: 'data-d="1"' }, size: 'sm' })}</div>
+    <label class="frow"><span>Zubereitungszeit</span><span class="grams"><input inputmode="numeric" value="${draft.min || ''}" placeholder="0" data-change="draftField" data-f="min"><span>Min.</span></span></label>
+    <button class="frow" data-act="draftPrep"><span>Gut zum Vorkochen</span><span class="switch ${draft.prep ? 'on' : ''}" aria-hidden="true"></span></button>
+    <label class="frow"><span>Foto</span><span class="row gap">${draft.photo ? `<img class="mini-photo" src="${draft.photo}" alt="">` : ''}<span class="link">${draft.photo ? 'Ändern' : 'Hinzufügen'}</span></span>
+      <input type="file" accept="image/*" hidden data-change="draftPhoto"></label>
   </section>
 
   <section class="panel">
@@ -324,17 +336,26 @@ defineRoute(/^#\/ernaehrung\/rechner$/, () => {
   return `
   ${pageHead('Tagesrechner', { back: '#/ernaehrung' })}
   <div class="label-row">
-    <button class="icon-btn small" data-act="calcDay" data-n="-1">${icon('left')}</button>
-    <p class="label">${relDay(calcDate) === fmtLong(calcDate) ? fmtLong(calcDate) : `${relDay(calcDate)} · ${fmtDM(calcDate)}`}</p>
-    <button class="icon-btn small" data-act="calcDay" data-n="1" ${calcDate >= isoDate() ? 'disabled' : ''}>${icon('right')}</button>
+    <button class="icon-btn small" data-act="calcDay" data-n="-1" aria-label="Vortag">${icon('left')}</button>
+    <p class="label">${['Heute', 'Gestern'].includes(relDay(calcDate)) ? `${relDay(calcDate)} · ${fmtDM(calcDate)}` : fmtLong(calcDate)}</p>
+    <button class="icon-btn small" data-act="calcDay" data-n="1" aria-label="Nächster Tag" ${calcDate >= isoDate() ? 'disabled' : ''}>${icon('right')}</button>
   </div>
-  <section class="panel flush rows">${entries.map((e) => `
+  <form class="panel meal-input" data-submit="estimateMeal">
+    <textarea name="text" rows="3" placeholder="Was hast du gegessen? z. B. 2 Brötchen mit Käse, ein Döner, 0,5 l Cola" ${estimating ? 'disabled' : ''}>${esc(mealText)}</textarea>
+    ${estimating ? '<p class="loading">Wird ausgewertet</p>' : `<div class="row gap">
+      <label class="btn icon-only" aria-label="Foto der Mahlzeit">${icon('camera')}<input type="file" accept="image/*" hidden data-change="estimatePhoto"></label>
+      <button class="btn primary grow" type="submit">${icon('sparkles')} Eintragen</button>
+    </div>`}
+    ${estimateError ? `<p class="error">${esc(estimateError)}</p>` : ''}
+    ${state.prefs.apiKey ? '' : '<p class="muted small">Für die automatische Erkennung brauchst du einen API-Schlüssel – <a class="link" href="#/einstellungen">in den Einstellungen hinterlegen</a>.</p>'}
+  </form>
+  ${entries.length ? `<section class="panel flush rows">${entries.map((e) => `
     <div class="row-item">
-      <span class="row-main"><span class="row-title">${esc(e.name)}</span><span class="row-sub mono">${num(e.m.kcal)} kcal · ${num(e.m.p)} g P</span></span>
-      <label class="grams"><input inputmode="decimal" value="${num(e.amount, 2)}" data-change="calcAmount" data-id="${e.id}"><span>${e.kind === 'recipe' ? 'Port.' : food(e.ref)?.ml ? 'ml' : 'g'}</span></label>
-      <button class="icon-btn small" data-act="calcRemove" data-id="${e.id}">${icon('x')}</button>
-    </div>`).join('') || '<p class="muted small pad">Trag ein, was du heute gegessen hast – grob reicht.</p>'}</section>
-  <div class="row gap"><button class="btn grow" data-act="pickFood" data-mode="calc">${icon('plus')} Lebensmittel</button><button class="btn grow" data-act="pickRecipe">${icon('plus')} Rezept</button></div>
+      <span class="row-main"><span class="row-title">${esc(e.name)}</span><span class="row-sub">${e.kind === 'ai' ? `${esc(e.label)} · ` : ''}<span class="mono">${num(e.m.kcal)} kcal · ${num(e.m.p)} g Protein</span></span></span>
+      ${e.kind === 'ai' ? '' : `<label class="grams"><input inputmode="decimal" value="${num(e.amount, 2)}" data-change="calcAmount" data-id="${e.id}"><span>${e.kind === 'recipe' ? 'Port.' : food(e.ref)?.ml ? 'ml' : 'g'}</span></label>`}
+      <button class="icon-btn small" data-act="calcRemove" data-id="${e.id}" aria-label="Entfernen">${icon('x')}</button>
+    </div>`).join('')}</section>` : ''}
+  <div class="row gap center-links"><button class="link muted" data-act="pickFood" data-mode="calc">${icon('plus')} Lebensmittel wählen</button><button class="link muted" data-act="pickRecipe">${icon('plus')} Rezept wählen</button></div>
   ${entries.length ? `<section class="panel mt ${v.ok ? 'ok' : 'warn'}">
     ${label('Ergebnis')}
     <p class="verdict">${v.ok ? 'Passt zu deinen Zielen.' : 'Nicht ganz im Ziel.'}</p>
@@ -347,6 +368,28 @@ defineRoute(/^#\/ernaehrung\/rechner$/, () => {
     </div>
   </section>` : ''}`;
 }, 'ernaehrung');
+
+async function runEstimate(input) {
+  estimating = true;
+  estimateError = '';
+  render();
+  try {
+    const res = await estimateMeal(input);
+    const list = (state.dayLog[calcDate] ??= []);
+    for (const it of res.items) {
+      list.push({ id: uid(), kind: 'ai', name: it.name, amount: it.amount, m: { kcal: it.kcal, p: it.protein, c: it.carbs, f: it.fat } });
+    }
+    mealText = '';
+    save();
+    if (res.note) toast(res.note);
+  } catch (e) {
+    estimateError = e instanceof ImportError ? e.message : 'Auswertung fehlgeschlagen.';
+    if (!(e instanceof ImportError)) console.error(e);
+  } finally {
+    estimating = false;
+    render();
+  }
+}
 
 function recipePickerSheet() {
   return `${sheetHead('Rezept')}
@@ -424,6 +467,17 @@ defineActions({
     draft.servings = Math.max(1, draft.servings + Number(el.dataset.d));
     update();
   },
+  async draftPhoto(el) {
+    const file = el.files?.[0];
+    el.value = '';
+    if (!file) return;
+    try {
+      draft.photo = (await prepareImage(file, 600, 480)).thumb;
+      update();
+    } catch {
+      toast('Foto konnte nicht gelesen werden');
+    }
+  },
   draftPrep() {
     draft.prep = !draft.prep;
     update();
@@ -446,7 +500,7 @@ defineActions({
     if (!draft.items.length) return toast('Bitte mindestens eine Zutat eintragen');
     const r = {
       id: draft.id ?? `r-${uid()}`, name: draft.name.trim(), cat: draft.cat, servings: draft.servings, min: draft.min,
-      prep: draft.prep, items: draft.items, extra: draft.extra.trim(), steps: draft.steps.split('\n').map((s) => s.trim()).filter(Boolean),
+      prep: draft.prep, photo: draft.photo || undefined, items: draft.items, extra: draft.extra.trim(), steps: draft.steps.split('\n').map((s) => s.trim()).filter(Boolean),
     };
     const i = state.recipes.findIndex((x) => x.id === r.id);
     if (i >= 0) state.recipes[i] = r;
@@ -556,6 +610,24 @@ defineActions({
     update();
   },
 
+  estimateMeal(form) {
+    const text = new FormData(form).get('text').trim();
+    if (!text) return toast('Beschreib kurz, was du gegessen hast');
+    mealText = text;
+    runEstimate({ text });
+  },
+  async estimatePhoto(el) {
+    const file = el.files?.[0];
+    el.value = '';
+    if (!file) return;
+    const text = document.querySelector('.meal-input textarea')?.value.trim() || '';
+    mealText = text;
+    try {
+      runEstimate({ text, images: [(await prepareImage(file, 1568)).base64] });
+    } catch {
+      toast('Foto konnte nicht gelesen werden');
+    }
+  },
   calcDay(el) {
     calcDate = addDays(calcDate, Number(el.dataset.n));
     update();

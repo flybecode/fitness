@@ -1,21 +1,34 @@
 // Übungsbibliothek. m: Hauptmuskeln (zählen voll), s: Hilfsmuskeln (zählen halb) für die Muskelbalance.
 // inc: übliche Gewichtssteigerung in kg, bw: Körpergewicht (Gewicht = Zusatzgewicht), timed: Sekunden statt Wdh.
 
-// Wöchentliche Satzziele pro Muskelgruppe (untere Grenze eines wirksamen Trainingsvolumens).
+// Wöchentliche Satzziele pro Muskelgruppe, je nach Trainingsart:
+// low = Low Volume / High Intensity (wenige, sehr harte Sätze bis zum Muskelversagen),
+// high = High Volume / Low Intensity (mehr Sätze mit etwas Abstand zum Versagen).
 export const MUSCLES = [
-  { id: 'Brust', target: 10 },
-  { id: 'Rücken', target: 10 },
-  { id: 'Schultern', target: 8 },
-  { id: 'Bizeps', target: 6 },
-  { id: 'Trizeps', target: 6 },
-  { id: 'Quadrizeps', target: 8 },
-  { id: 'Beinbeuger', target: 6 },
-  { id: 'Po', target: 6 },
-  { id: 'Waden', target: 4 },
-  { id: 'Bauch', target: 4 },
+  { id: 'Brust', low: 6, high: 12 },
+  { id: 'Rücken', low: 6, high: 12 },
+  { id: 'Schultern', low: 5, high: 10 },
+  { id: 'Bizeps', low: 4, high: 8 },
+  { id: 'Trizeps', low: 4, high: 8 },
+  { id: 'Quadrizeps', low: 5, high: 10 },
+  { id: 'Beinbeuger', low: 4, high: 8 },
+  { id: 'Po', low: 4, high: 8 },
+  { id: 'Waden', low: 3, high: 6 },
+  { id: 'Bauch', low: 3, high: 6 },
 ];
 
-const E = (id, name, m, s = [], x = {}) => ({ id, name, m, s, inc: 2.5, ...x });
+export const STYLES = {
+  high: { label: 'High Volume · Low Intensity', hint: 'Mehr Sätze, meist 1–3 Wiederholungen vor dem Muskelversagen' },
+  low: { label: 'Low Volume · High Intensity', hint: 'Wenige, sehr harte Sätze bis zum Muskelversagen' },
+};
+
+export const EQUIPMENT = { free: 'Freihantel', machine: 'Maschine / Kabel', bw: 'Körpergewicht' };
+
+// Übungen an Maschinen und Kabelzügen; alles andere ohne bw ist Freihantel.
+const MACHINE = new Set(['brustpresse', 'butterfly', 'kabelzug-fly', 'latzug', 'kabelrudern', 'rudern-maschine', 'schulterpresse',
+  'facepull', 'hackenschmidt', 'beinpresse', 'beinstrecker', 'beinbeuger', 'abduktoren', 'trizeps-kabel', 'kabelcrunch']);
+
+const E = (id, name, m, s = [], x = {}) => ({ id, name, m, s, inc: 2.5, eq: x.bw ? 'bw' : MACHINE.has(id) ? 'machine' : 'free', ...x });
 
 export const EXERCISES = [
   E('bankdruecken', 'Bankdrücken (Langhantel)', ['Brust'], ['Trizeps', 'Schultern']),

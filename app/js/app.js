@@ -1,11 +1,23 @@
-import { start } from './core.js';
-import { state } from './store.js';
+import { start, defineActions } from './core.js';
+import { state, save } from './store.js';
 import { startTicker } from './timer.js';
 import './views/ernaehrung.js';
 import './views/dashboard.js';
 import './views/training.js';
 import './views/progress.js';
 import './views/einstellungen.js';
+
+defineActions({
+  // Kachel auf- und zuklappen, ohne die Seite neu zu zeichnen.
+  toggleColl(el) {
+    const panel = el.closest('.coll');
+    const open = !panel.classList.contains('open');
+    panel.classList.toggle('open', open);
+    el.setAttribute('aria-expanded', open);
+    state.prefs.collapsed = { ...state.prefs.collapsed, [el.dataset.k]: open };
+    save();
+  },
+});
 
 start();
 startTicker();

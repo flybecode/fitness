@@ -1,5 +1,6 @@
 import { $, esc, num } from './util.js';
 import { icon } from './icons.js';
+import { state } from './store.js';
 
 // Bottom-Sheet: der Inhalt wird von einer Funktion erzeugt, damit er nach Änderungen neu gerendert werden kann.
 let sheetFn = null;
@@ -83,7 +84,13 @@ export function ring(pct, inner, { size = 96, stroke = 10, color = 'var(--red)' 
   </div>`;
 }
 
-// Farbiges Icon-Kästchen für Kacheln. tone: red | orange | green | blue
+const MUSCLE_TONE = { Brust: 'red', Rücken: 'blue', Schultern: 'orange', Bizeps: 'yellow', Trizeps: 'yellow', Quadrizeps: 'green', Beinbeuger: 'green', Po: 'green', Waden: 'green', Bauch: 'purple' };
+const EQ_ICON = { free: 'barbell', machine: 'adjustments-horizontal', bw: 'gymnastics' };
+
+// Bild für eine Übung: Geräte-Icon in der Farbe der Hauptmuskelgruppe.
+export const exerciseBadge = (ex) => badge(EQ_ICON[ex.eq] ?? 'barbell', MUSCLE_TONE[ex.m?.[0]] ?? 'blue');
+
+// Farbiges Icon-Kästchen für Kacheln. tone: red | orange | yellow | green | blue | purple
 export const badge = (name, tone = 'red') => `<span class="badge-ic bi-${tone}">${icon(name)}</span>`;
 
 // Aufteilung der Kalorien auf Protein / Kohlenhydrate / Fett als farbiger Streifen.
@@ -158,6 +165,15 @@ export const stepper = (value, { dec, inc, valueHtml, size = '' } = {}) => `
     <div class="step-value">${valueHtml ?? value}</div>
     <button class="step" data-act="${inc.act}" ${inc.attrs || ''} aria-label="Mehr">${icon('plus')}</button>
   </div>`;
+
+// Einklappbare Kachel. Der Zustand (auf/zu) wird pro key gemerkt.
+export function collapsible(key, head, body, { open = true, cls = '' } = {}) {
+  const isOpen = state.prefs.collapsed?.[key] ?? open;
+  return `<section class="panel coll ${isOpen ? 'open' : ''} ${cls}">
+    <button class="coll-head" data-act="toggleColl" data-k="${key}" aria-expanded="${isOpen}">${head}${icon('chevron', 'coll-ic')}</button>
+    <div class="coll-body">${body}</div>
+  </section>`;
+}
 
 export const empty = (title, text, actionsHtml = '') =>
   `<div class="panel empty"><p class="empty-title">${title}</p><p class="muted small">${text}</p>${actionsHtml}</div>`;

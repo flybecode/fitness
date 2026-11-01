@@ -2,7 +2,7 @@
 // Elemente lösen Aktionen über data-act (Klick), data-change, data-input und data-submit aus.
 
 import { state, save } from './store.js';
-import { $ } from './util.js';
+import { $, isoDate } from './util.js';
 import { refreshSheet, closeSheet } from './ui.js';
 
 const routes = [];
@@ -34,6 +34,11 @@ export function render() {
   tabbar.hidden = hash === '#/start';
   tabbar.querySelectorAll('a').forEach((a) => a.classList.toggle('active', a.dataset.tab === route.tab));
 
+  // Seitlich scrollbare Bereiche (z. B. Wochenkalender) auf ihren Anker ausrichten.
+  document.querySelectorAll('.wscroll').forEach((el) => {
+    const anchor = el.querySelector('.anchor');
+    if (anchor) el.scrollLeft = anchor.offsetLeft - el.offsetLeft;
+  });
   if (hash !== lastHash) {
     window.scrollTo(0, 0);
     lastHash = hash;
@@ -58,5 +63,15 @@ export function start() {
     closeSheet();
     render();
   });
+  // „Heute“ muss stimmen, auch wenn die App über Nacht im Hintergrund offen blieb.
+  let day = isoDate();
+  const refreshDay = () => {
+    if (isoDate() !== day) {
+      day = isoDate();
+      render();
+    }
+  };
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && refreshDay());
+  setInterval(refreshDay, 30000);
   render();
 }

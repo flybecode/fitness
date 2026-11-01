@@ -1,14 +1,14 @@
 // Offline-Fähigkeit: Online kommt jede Datei frisch vom Server (Netz zuerst),
 // die gespeicherte Kopie springt nur ein, wenn keine Verbindung besteht.
 // VERSION bei Änderungen trotzdem erhöhen, damit der Offline-Vorrat erneuert wird.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `fitness-${VERSION}`;
 const FILES = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png',
   './js/app.js', './js/core.js', './js/store.js', './js/util.js', './js/ui.js', './js/icons.js', './js/timer.js',
   './js/nutrition.js', './js/training.js', './js/progress.js', './js/photos.js', './js/off.js', './js/ai.js',
-  './js/data/foods.js', './js/data/recipes.js', './js/data/exercises.js',
+  './js/data/foods.js', './js/data/recipes.js', './js/data/exercises.js', './js/data/tabler.js',
   './js/views/ernaehrung.js', './js/views/dashboard.js', './js/views/training.js', './js/views/progress.js', './js/views/einstellungen.js',
   './vendor/anthropic-sdk.mjs', './vendor/node-buffer.mjs', './vendor/node-process.mjs', './vendor/node-events.mjs',
   './vendor/node-tty.mjs', './vendor/node-async_hooks.mjs',

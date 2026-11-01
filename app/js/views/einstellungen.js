@@ -3,6 +3,7 @@ import { state, save, replaceState, resetState, exportData } from '../store.js';
 import { isoDate, num, parseNum, fmtRest } from '../util.js';
 import { ACTIVITY, GOALS, DIETS, calcTargets, currentWeight } from '../nutrition.js';
 import { toast, pageHead, label } from '../ui.js';
+import { STYLES } from '../data/exercises.js';
 
 const RESTS = [60, 90, 120, 150, 180];
 
@@ -74,13 +75,17 @@ defineRoute(/^#\/einstellungen$/, () => {
 
   <section class="panel stack mt">
     ${label('Training')}
+    <p class="label">Trainingsart</p>
+    <div class="opts">${Object.entries(STYLES).map(([k, s]) => `
+      <button class="opt" data-act="setStyle" data-k="${k}"><input type="radio" ${(state.prefs.style || 'high') === k ? 'checked' : ''} tabindex="-1"><span><b>${s.label}</b><small>${s.hint}</small></span></button>`).join('')}</div>
+    <p class="muted small">Bestimmt, wie viele Sätze pro Woche und Muskelgruppe die Muskelbalance als ausreichend wertet.</p>
     <p class="label">Pause zwischen Sätzen</p>
     <div class="seg">${RESTS.map((s) => `<button class="${(state.prefs.rest || 120) === s ? 'on' : ''}" data-act="setRest" data-s="${s}">${fmtRest(s)}</button>`).join('')}</div>
   </section>
 
   <section class="panel stack">
-    ${label('KI-Import für Rezepte')}
-    <p class="muted small">Für das Auslesen von Screenshots braucht die App einen API-Schlüssel von Anthropic (console.anthropic.com). Er bleibt auf diesem Gerät, wird nicht exportiert und nur an api.anthropic.com gesendet. Ein Import kostet wenige Cent.</p>
+    ${label('KI: Rezept-Import und Tagesrechner')}
+    <p class="muted small">Zum Auslesen von Rezepten und zum Erkennen deiner Mahlzeiten braucht die App einen API-Schlüssel von Anthropic (console.anthropic.com). Er bleibt auf diesem Gerät, wird nicht exportiert und nur an api.anthropic.com gesendet. Eine Anfrage kostet wenige Cent.</p>
     <form data-submit="saveApiKey" class="row gap">
       <input name="key" type="password" autocomplete="off" placeholder="${state.prefs.apiKey ? '•••••••• gespeichert' : 'sk-ant-…'}">
       <button class="btn" type="submit">Speichern</button>
@@ -131,6 +136,11 @@ defineActions({
     const d = Number(el.dataset.d);
     state.profile.kcalAdjust = d === 0 ? 0 : (state.profile.kcalAdjust || 0) + d;
     update();
+  },
+  setStyle(el) {
+    state.prefs.style = el.dataset.k;
+    update();
+    toast('Muskelbalance neu bewertet');
   },
   setRest(el) {
     state.prefs.rest = Number(el.dataset.s);

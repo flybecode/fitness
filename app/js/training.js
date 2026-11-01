@@ -9,8 +9,10 @@ export const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 export { MUSCLES };
 
 export const allExercises = () => [...EXERCISES, ...state.customExercises];
-export const getExercise = (id) =>
-  allExercises().find((e) => e.id === id) ?? { id, name: 'Unbekannte Übung', m: [], s: [], inc: 2.5 };
+export const getExercise = (id) => {
+  const ex = allExercises().find((e) => e.id === id) ?? { id, name: 'Unbekannte Übung', m: [], s: [], inc: 2.5 };
+  return { eq: ex.bw ? 'bw' : 'free', ...ex };
+};
 export const unit = (id) => state.units.find((u) => u.id === id) ?? null;
 
 export function parseReps(reps) {
@@ -95,10 +97,21 @@ export function tip(exId, reps, sets) {
   const ex = getExercise(exId);
   const { min, max } = parseReps(reps);
   const last = lastPerformance(exId);
-  if (!last) return { dir: 'new', w: null, text: `Erstes Mal: Wähle ein Gewicht, mit dem du ${max} saubere Wiederholungen schaffst.` };
+  const reps = ex.timed ? 'Sekunden' : 'Wiederholungen';
+  if (!last) {
+    if (ex.eq === 'bw') return { dir: 'new', w: null, text: ex.timed ? `Erstes Mal: Halte ${min}–${max} Sekunden.` : `Erstes Mal: ${min}–${max} saubere Wiederholungen schaffen.` };
+    return { dir: 'new', w: null, text: `Erstes Mal: Wähle ein Gewicht, mit dem du ${max} saubere Wiederholungen schaffst.` };
+  }
   const top = Math.max(...last.sets.map((s) => s.w || 0));
   const work = last.sets.filter((s) => (s.w || 0) === top);
   const inc = ex.inc || 0;
+  // Körpergewicht ohne Zusatzgewicht: Fortschritt über Wiederholungen.
+  if (ex.eq === 'bw' && !top) {
+    const allHit = work.length >= sets && work.every((s) => s.r >= max);
+    return allHit
+      ? { dir: 'up', w: null, text: ex.timed ? `Letztes Mal alle Sätze ${max}+ Sekunden → heute länger halten.` : `Letztes Mal alle Sätze mit ${max}+ Wdh. → mehr Wiederholungen oder etwas Zusatzgewicht.` }
+      : { dir: 'hold', w: null, text: `${reps} steigern (Ziel ${min}–${max}).` };
+  }
   if (inc && work.length >= sets && work.every((s) => s.r >= max)) {
     return { dir: 'up', w: top + inc, text: `Letztes Mal alle Sätze mit ${max}+ Wdh. → heute ${fmtKg(top + inc)} probieren.` };
   }
@@ -214,7 +227,8 @@ export function muscleBalance() {
       ex.s.forEach((m) => { if (m in sets) sets[m] += it.sets / 2; });
     }
   }
-  const rows = MUSCLES.map((m) => ({ id: m.id, sets: sets[m.id], target: m.target, pct: Math.min(1, sets[m.id] / m.target) }));
+  const style = state.prefs.style === 'low' ? 'low' : 'high';
+  const rows = MUSCLES.map((m) => ({ id: m.id, sets: sets[m.id], target: m[style], pct: Math.min(1, sets[m.id] / m[style]) }));
   const hasPlan = Object.values(plan).some((id) => unit(id));
   return { rows, score: hasPlan ? Math.round((rows.reduce((s, r) => s + r.pct, 0) / rows.length) * 100) : null };
 }

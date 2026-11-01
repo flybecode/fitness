@@ -7,7 +7,7 @@ export const VERSION = 2;
 const defaults = () => ({
   version: VERSION,
   profile: null, // { sex, birthYear, height, activity, goal, mealsPerDay, kcalAdjust, lastAdjust }
-  prefs: { diet: 'alles', apiKey: '', rest: 120 },
+  prefs: { diet: 'alles', apiKey: '', rest: 120, style: 'high', collapsed: {} },
 
   // Ernährung
   customFoods: [], // [{ id, name, kcal, p, c, f, src: 'off' | 'ai' | 'manuell' }]

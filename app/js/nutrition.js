@@ -21,7 +21,34 @@ export const GOALS = {
 };
 
 export const DIETS = { alles: 'Alles', veg: 'Vegetarisch', vegan: 'Vegan' };
-export const CATS = { fruehstueck: 'Frühstück', haupt: 'Hauptgericht', snack: 'Snack' };
+export const CATS = { fruehstueck: 'Frühstück', haupt: 'Hauptgericht', snack: 'Snack', shake: 'Shake' };
+
+// Bild-Icon und Farbe für Rezeptkacheln, abgeleitet aus dem Namen (Reihenfolge = Priorität).
+const VISUAL_RULES = [
+  [/shake/, 'milkshake'],
+  [/lachs|garnele|thunfisch|fisch|kabeljau/, 'fish'],
+  [/salat/, 'salad'],
+  [/curry|chili|suppe|eintopf/, 'soup'],
+  [/pasta|nudel|bolognese|spaghetti/, 'bowl-chopsticks'],
+  [/wrap/, 'baguette'],
+  [/rührei|omelett|scramble|pancake/, 'egg-fried'],
+  [/eier|ei /, 'egg'],
+  [/brot|toast|brötchen/, 'bread'],
+  [/hähnchen|pute|rind|hack|schwein|steak/, 'meat'],
+  [/kartoffel|tofu|kichererbse|linsen|quinoa|gemüse-pfanne/, 'leaf'],
+  [/oats|porridge|quark|müsli|granola/, 'bowl-spoon'],
+  [/pudding|skyr|joghurt/, 'cup'],
+  [/apfel|beere|obst|banane/, 'apple'],
+  [/hummus|gemüse|gurke|karotte/, 'carrot'],
+  [/reiswaffel|riegel|keks/, 'cookie'],
+];
+const CAT_VISUAL = { fruehstueck: ['bowl-spoon', 'yellow'], haupt: ['bowl-chopsticks', 'orange'], snack: ['apple', 'green'], shake: ['milkshake', 'blue'] };
+
+export function recipeVisual(r) {
+  const n = r.name.toLowerCase();
+  const [fallback, tone] = CAT_VISUAL[r.cat] ?? CAT_VISUAL.haupt;
+  return { icon: VISUAL_RULES.find(([re]) => re.test(n))?.[1] ?? fallback, tone };
+}
 
 export function currentWeight() {
   const entries = state.bodyLog.filter((e) => e.weight).sort((a, b) => a.date.localeCompare(b.date));
@@ -183,6 +210,7 @@ function shopAmount(f, grams) {
 export function dayEntries(date) {
   return (state.dayLog[date] ?? [])
     .map((e) => {
+      if (e.kind === 'ai') return { ...e, label: e.amount };
       if (e.kind === 'recipe') {
         const r = recipe(e.ref);
         return r && { ...e, name: r.name, label: `${num(e.amount, 2)} ${e.amount === 1 ? 'Portion' : 'Portionen'}`, m: recipeMacros(r, e.amount) };

@@ -2,15 +2,17 @@ import { defineRoute, defineActions, update, go } from '../core.js';
 import { state, save } from '../store.js';
 import { esc, num, uid, isoDate, weekStart, addDays, weekNumber, weekLabel, fmtDM, fmtLong, fmtShort, fmtDuration, parseNum, relDay } from '../util.js';
 import {
-  WEEKDAYS, MUSCLES, allExercises, getExercise, unit, fmtReps, parseReps, weekDays, moveDay, setDay, resetWeek,
+  WEEKDAYS, MUSCLES, allExercises, getExercise, unit, fmtReps, parseReps, weekDays, dayIndex, moveDay, setDay, resetWeek,
   todayInfo, blocksOf, lastPerformance, startLive, newBlock, blockRounds, blockSetsDone, blockSetsTotal, advance, finishLive,
   volume, setCount, exerciseHistory, score, trainedExercises, muscleBalance, adherence, weeklyCounts, insights,
 } from '../training.js';
 import { startRest, stopRest, adjustRest, unlockAudio } from '../timer.js';
 import { icon } from '../icons.js';
-import { openSheet, closeSheet, sheetHead, toast, pageHead, label, bar, lineChart, sparkline, weekBars, stepper, empty, ring, badge } from '../ui.js';
+import { openSheet, closeSheet, sheetHead, toast, pageHead, label, bar, lineChart, sparkline, weekBars, stepper, empty, ring, badge, collapsible, exerciseBadge } from '../ui.js';
+import { EQUIPMENT } from '../data/exercises.js';
 
-let ws = weekStart(isoDate());
+let ws = weekStart(isoDate()); // Woche, in der zuletzt ein Tag angetippt wurde
+let anchorWs = null; // auf diese Woche scrollt der Kalender, sonst auf die aktuelle
 let picker = null; // { mode: 'unit', unitId } | { mode: 'live' }
 let pickerQuery = '';
 let editWeight = false;
@@ -21,15 +23,24 @@ const setsText = (sets) => sets.map((s) => `${s.w ? `${num(s.w, 2)}×` : ''}${s.
 
 // --- Bausteine, auch fürs Dashboard ------------------------------------------------------
 
-export function weekStrip(w, { interactive = true } = {}) {
-  return `<div class="week">${weekDays(w).map((d) => {
-    const name = d.done[0]?.name ?? d.planned?.name ?? (d.brk ? 'Pause' : '');
-    const tag = interactive ? `button data-act="dayMenu" data-i="${d.i}"` : 'div';
-    return `<${tag} class="day st-${d.status} ${d.today ? 'today' : ''}">
-      <span class="d-wd">${WEEKDAYS[d.i]}</span><span class="d-num">${Number(d.date.slice(8))}</span>
-      <span class="d-unit">${esc(name)}</span>
-    </${interactive ? 'button' : 'div'}>`;
-  }).join('')}</div>`;
+// Wochenkalender zum seitlichen Wischen: 8 Wochen zurück bis 8 Wochen voraus, startet bei anchor.
+export function weekScroller({ interactive = true, anchor = null } = {}) {
+  const current = weekStart(isoDate());
+  const target = anchor ?? current;
+  const weeks = Array.from({ length: 17 }, (_, k) => addDays(current, (k - 8) * 7));
+  const title = (w) => (w === current ? 'Diese Woche' : w === addDays(current, 7) ? 'Nächste Woche' : w === addDays(current, -7) ? 'Letzte Woche' : weekLabel(w));
+  return `<div class="wscroll">${weeks.map((w) => `
+    <div class="wk ${w === target ? 'anchor' : ''}">
+      <p class="wk-title"><span>${title(w)}</span><span class="muted">${w === current || Math.abs(weekNumber(w) - weekNumber(current)) === 1 ? weekLabel(w) : ''}</span></p>
+      <div class="week">${weekDays(w).map((d) => {
+        const name = d.done[0]?.name ?? d.planned?.name ?? (d.brk ? 'Pause' : '');
+        const attrs = interactive ? `data-act="dayMenu" data-date="${d.date}"` : '';
+        return `<${interactive ? 'button' : 'div'} class="day st-${d.status} ${d.today ? 'today' : ''}" ${attrs}>
+          <span class="d-wd">${WEEKDAYS[d.i]}</span><span class="d-num">${Number(d.date.slice(8))}</span>
+          <span class="d-unit">${esc(name)}</span>
+        </${interactive ? 'button' : 'div'}>`;
+      }).join('')}</div>
+    </div>`).join('')}</div>`;
 }
 
 export function liveBanner() {
@@ -71,15 +82,21 @@ export function balancePanel({ compact = false } = {}) {
         <p class="muted small">${ok} von ${bal.rows.length} Muskelgruppen erreichen ihr Wochenziel.</p>
         ${gaps.length ? `<p class="small accent mt">Zu wenig: ${gaps.join(', ')}</p>` : ''}</div>
     </div>
-    ${compact ? '' : `<div class="balance">${bal.rows.map((r) => `
-      <div class="bal-row ${r.sets === 0 ? 'gap' : ''}"><span>${r.id}</span>${bar(r.sets, r.target, { accent: r.pct < 0.5, overWarn: false })}<span class="mono">${num(r.sets, 1)}/${r.target}</span></div>`).join('')}</div>`}
+    ${compact ? '' : `<details class="sub-coll">
+      <summary>Sätze pro Muskelgruppe ${icon('chevron', 'coll-ic')}</summary>
+      <div class="balance">${bal.rows.map((r) => `
+      <div class="bal-row ${r.sets === 0 ? 'gap' : ''}"><span>${r.id}</span>${bar(r.sets, r.target, { accent: r.pct < 0.5, overWarn: false })}<span class="mono">${num(r.sets, 1)}/${r.target}</span></div>`).join('')}</div>
+    </details>`}
   </section>`;
 }
 
-export function insightList(max = 6) {
+export function insightList(max = 6, key = 'hinweise') {
   const list = insights().slice(0, max);
   if (!list.length) return '';
-  return `<section class="panel">${label('Hinweise')}<ul class="insights">${list.map((i) => `<li class="${i.level}">${esc(i.text)}</li>`).join('')}</ul></section>`;
+  const warn = list.filter((i) => i.level === 'warn').length;
+  return collapsible(key,
+    `<span class="coll-title">${badge('bulb', warn ? 'orange' : 'blue')}<span>Hinweise</span><span class="count">${list.length}</span></span>`,
+    `<ul class="insights">${list.map((i) => `<li class="${i.level}">${esc(i.text)}</li>`).join('')}</ul>`);
 }
 
 // --- Übersicht -------------------------------------------------------------------
@@ -88,42 +105,35 @@ defineRoute(/^#\/training$/, () => {
   const a = adherence(4);
   const counts = weeklyCounts(12);
   const exs = trainedExercises();
-  const modified = !!state.weekPlan[ws];
+  const modified = Object.keys(state.weekPlan).some((k) => k >= weekStart(isoDate()));
   return `
   ${pageHead('Training')}
   ${todayAction()}
 
-  <section class="panel">
-    <div class="label-row">
-      <button class="icon-btn small" data-act="trWeek" data-n="-7" aria-label="Vorige Woche">${icon('left')}</button>
-      <p class="label">${weekLabel(ws)}</p>
-      <button class="icon-btn small" data-act="trWeek" data-n="7" aria-label="Nächste Woche">${icon('right')}</button>
-    </div>
-    ${weekStrip(ws)}
+  <section class="panel cal">
+    ${weekScroller({ anchor: anchorWs })}
     <div class="row between mt">
       <button class="link" data-act="scheduleSheet">Fester Rhythmus</button>
-      ${modified ? '<button class="link muted" data-act="resetWeek">Woche zurücksetzen</button>' : '<span class="muted small">Tippen zum Verschieben</span>'}
+      <span class="muted small">Tag antippen zum Ändern</span>
     </div>
   </section>
 
   ${balancePanel()}
   ${insightList()}
 
-  <section class="panel">
-    ${label('Trainings pro Woche', a.pct != null ? `<span class="label">4 Wochen: <b class="mono">${a.done}/${a.planned}</b></span>` : '')}
-    ${weekBars(counts.map((c) => ({ label: String(weekNumber(c.ws)), value: c.count, target: c.planned, muted: c.brk })))}
-    <p class="muted small mt">Linie = geplant · gedimmt = Woche mit Pause</p>
-  </section>
+  ${collapsible('frequenz',
+    `<span class="coll-title">${badge('calendar', 'blue')}<span>Trainings pro Woche</span>${a.pct != null ? `<span class="count">${a.done}/${a.planned}</span>` : ''}</span>`,
+    `${weekBars(counts.map((c) => ({ label: String(weekNumber(c.ws)), value: c.count, target: c.planned, muted: c.brk })))}
+    <p class="muted small mt">Gepunktete Linie = geplant · gedimmt = Woche mit Pause</p>`)}
 
-  ${exs.length ? `<section class="panel flush">
-    <div class="pad-x">${label('Übungen · Fortschritt')}</div>
-    <div class="rows">${exs.map((t) => `
+  ${exs.length ? collapsible('uebungen',
+    `<span class="coll-title">${badge('trend', 'green')}<span>Fortschritt pro Übung</span><span class="count">${exs.length}</span></span>`,
+    `<div class="rows">${exs.map((t) => `
       <a class="row-item" href="#/training/uebung/${t.id}">
         <span class="row-main"><span class="row-title">${esc(t.ex.name)}</span><span class="row-sub">${t.sessions}× · zuletzt ${relDay(t.lastDate)}</span></span>
         ${sparkline(t.series.map((s) => s.y))}
         <span class="mono change ${t.change > 0.005 ? 'up' : t.change < -0.005 ? 'down' : ''}">${t.sessions > 1 ? pct(t.change) : '–'}</span>
-      </a>`).join('')}</div>
-  </section>` : ''}
+      </a>`).join('')}</div>`, { cls: 'flush-body' }) : ''}
 
   <div class="label-row section"><p class="label">Einheiten</p><button class="link" data-act="newUnit">${icon('plus')} Neue Einheit</button></div>
   ${state.units.length ? `<div class="panel flush rows">${state.units.map((u) => `
@@ -131,9 +141,11 @@ defineRoute(/^#\/training$/, () => {
     <span class="row-sub">${u.items.length ? u.items.map((i) => esc(getExercise(i.exId).name)).join(' · ') : 'Noch leer'}</span></span>${icon('right')}</a>`).join('')}</div>`
   : empty('Noch keine Einheiten', 'Leg z. B. „Oberkörper“ und „Unterkörper“ an und trag deine Übungen ein.', '<button class="btn primary" data-act="newUnit">Erste Einheit anlegen</button>')}
 
-  ${state.workouts.length ? `${label('Verlauf')}<div class="panel flush rows">${state.workouts.slice(0, 6).map((w) => `
+  ${state.workouts.length ? collapsible('verlauf',
+    `<span class="coll-title">${badge('clock', 'blue')}<span>Verlauf</span><span class="count">${state.workouts.length}</span></span>`,
+    `<div class="rows">${state.workouts.slice(0, 8).map((w) => `
     <a class="row-item" href="#/training/verlauf/${w.id}"><span class="row-main"><span class="row-title">${esc(w.name)}</span>
-    <span class="row-sub">${relDay(w.date)} · ${fmtMin(w.end - w.start)} · ${setCount(w)} Sätze</span></span>${icon('right')}</a>`).join('')}</div>` : ''}`;
+    <span class="row-sub">${relDay(w.date)} · ${fmtMin(w.end - w.start)} · ${setCount(w)} Sätze</span></span>${icon('right')}</a>`).join('')}</div>`, { cls: 'flush-body' }) : ''}`;
 }, 'training');
 
 // --- Tag im Kalender -------------------------------------------------------------------
@@ -149,11 +161,13 @@ function dayMenuSheet(i) {
       <button class="btn primary block" data-act="startUnit" data-id="${d.planned.id}">Jetzt starten</button>
       ${label('Verschieben auf (nur diese Woche)')}
       <div class="wd-grid">${WEEKDAYS.map((wd, j) => `<button class="btn small ${j === i ? 'on' : ''}" data-act="moveDay" data-from="${i}" data-to="${j}" ${j === i ? 'disabled' : ''}>${wd}</button>`).join('')}</div>
-      <button class="btn block mt danger" data-act="clearDay" data-i="${i}">Diese Woche streichen</button>`;
+      <button class="btn block mt danger" data-act="clearDay" data-i="${i}">Diese Woche streichen</button>
+      ${state.weekPlan[ws] ? '<button class="btn block ghost" data-act="resetWeek">Woche auf festen Rhythmus zurücksetzen</button>' : ''}`;
   }
   return `${sheetHead(title, d.brk ? 'Pause eingetragen' : 'Ruhetag')}
     ${state.units.length ? `${label('Einheit eintragen (nur diese Woche)')}
-    <div class="rows">${state.units.map((u) => `<button class="row-item" data-act="assignDay" data-i="${i}" data-id="${u.id}"><span class="row-main"><span class="row-title">${esc(u.name)}</span></span>${icon('plus')}</button>`).join('')}</div>` : '<p class="muted small">Leg zuerst eine Einheit an.</p>'}`;
+    <div class="rows">${state.units.map((u) => `<button class="row-item" data-act="assignDay" data-i="${i}" data-id="${u.id}"><span class="row-main"><span class="row-title">${esc(u.name)}</span></span>${icon('plus')}</button>`).join('')}</div>` : '<p class="muted small">Leg zuerst eine Einheit an.</p>'}
+    ${state.weekPlan[ws] ? '<button class="btn block ghost mt" data-act="resetWeek">Woche auf festen Rhythmus zurücksetzen</button>' : ''}`;
 }
 
 function scheduleSheet() {
@@ -183,10 +197,11 @@ defineRoute(/^#\/training\/einheit\/([\w-]+)$/, (id) => {
     const L = String.fromCharCode(64 + letter);
     return `<div class="block ${block.length > 1 ? 'superset' : ''}">${block.length > 1 ? '<span class="ss-tag">Superset</span>' : ''}${block.map((it, k) => {
       const idx = u.items.indexOf(it);
+      const ex = getExercise(it.exId);
       return `<div class="row-item">
-        <span class="mono letter">${L}${block.length > 1 ? k + 1 : ''}</span>
-        <button class="row-main" data-act="itemSheet" data-unit="${u.id}" data-i="${idx}"><span class="row-title">${esc(getExercise(it.exId).name)}</span>
-        <span class="row-sub mono">${it.sets} × ${fmtReps(it.reps)}</span></button>
+        ${exerciseBadge(ex)}
+        <button class="row-main" data-act="itemSheet" data-unit="${u.id}" data-i="${idx}"><span class="row-title">${esc(ex.name)}</span>
+        <span class="row-sub"><span class="mono">${L}${block.length > 1 ? k + 1 : ''}</span> · ${it.sets} × ${fmtReps(it.reps)} · ${EQUIPMENT[ex.eq]}</span></button>
         ${stepper(it.sets, { dec: { act: 'itemSets', attrs: `data-unit="${u.id}" data-i="${idx}" data-d="-1"` }, inc: { act: 'itemSets', attrs: `data-unit="${u.id}" data-i="${idx}" data-d="1"` }, size: 'sm' })}
       </div>`;
     }).join('')}</div>`;
@@ -225,10 +240,12 @@ function pickerList() {
   const list = allExercises().filter((e) => !q || e.name.toLowerCase().includes(q) || e.m.some((m) => m.toLowerCase().includes(q)));
   const groups = MUSCLES.map((m) => [m.id, list.filter((e) => e.m[0] === m.id)]).filter(([, l]) => l.length);
   return `${groups.map(([m, l]) => `${label(m)}${l.map((e) => `
-      <button class="row-item" data-act="chooseExercise" data-id="${e.id}"><span class="row-main"><span class="row-title">${esc(e.name)}</span></span>${icon('plus')}</button>`).join('')}`).join('')}
+      <button class="row-item" data-act="chooseExercise" data-id="${e.id}">${exerciseBadge(getExercise(e.id))}<span class="row-main"><span class="row-title">${esc(e.name)}</span>
+      <span class="row-sub">${EQUIPMENT[getExercise(e.id).eq]}</span></span>${icon('plus')}</button>`).join('')}`).join('')}
     ${q ? `<form data-submit="customExercise" class="panel stack mt">
       ${label('Eigene Übung anlegen')}
       <input name="name" value="${esc(pickerQuery.trim())}" required>
+      <div class="seg">${Object.entries(EQUIPMENT).map(([k, l], n) => `<label><input type="radio" name="eq" value="${k}" ${n === 0 ? 'checked' : ''}><span>${l.split(' ')[0]}</span></label>`).join('')}</div>
       <select name="muscle">${MUSCLES.map((m) => `<option>${m.id}</option>`).join('')}</select>
       <button class="btn block" type="submit">Anlegen</button></form>` : ''}`;
 }
@@ -264,8 +281,9 @@ defineRoute(/^#\/training\/live$/, () => {
   <div class="tiles">${l.blocks.map((b, i) => {
     const done = b.phase === 'done';
     const started = blockSetsDone(b) > 0;
+    const first = getExercise(b.items[0].exId);
     return `<a class="tile ${done ? 'done' : started ? 'active' : ''}" href="#/training/live/${i}">
-      ${b.items.length > 1 ? '<span class="label accent">Superset</span>' : `<span class="label">${String(i + 1).padStart(2, '0')}</span>`}
+      <span class="tile-top">${done ? badge('check', 'green') : exerciseBadge(first)}<span class="label ${b.items.length > 1 ? 'accent' : ''}">${b.items.length > 1 ? 'Superset' : first.m[0] ?? ''}</span></span>
       <span class="tile-name">${b.items.map((it) => esc(getExercise(it.exId).name)).join('<br>')}</span>
       <span class="tile-foot mono">${done ? 'Fertig' : `${blockSetsDone(b)}/${blockSetsTotal(b)} Sätze`}${b.items[0].w ? ` · ${num(b.items[0].w, 2)} kg` : ''}</span>
     </a>`;
@@ -299,8 +317,9 @@ defineRoute(/^#\/training\/live\/(\d+)$/, (bi) => {
         ${b.items.length > 1 ? label(esc(ex.name)) : ''}
         ${last ? `<p class="label">Letztes Mal · ${relDay(last.date)}</p><p class="mono">${setsText(last.sets)}</p>` : ''}
         <p class="tip ${it.tip.dir}">${arrow ? icon(arrow) : ''}<span>${esc(it.tip.text)}</span></p>
-        <p class="label mt">${ex.bw ? 'Zusatzgewicht' : 'Gewicht'}</p>
-        ${weightStepper(bi, i, it)}
+        ${ex.eq === 'bw'
+          ? `<details class="sub-coll" ${it.w ? 'open' : ''}><summary>Zusatzgewicht (optional) ${icon('chevron', 'coll-ic')}</summary>${weightStepper(bi, i, it)}</details>`
+          : `<p class="label mt">Gewicht</p>${weightStepper(bi, i, it)}`}
       </section>`;
     }).join('')}
     <button class="btn primary block xl" data-act="startBlock" data-b="${bi}">Start</button>`;
@@ -339,7 +358,7 @@ defineRoute(/^#\/training\/live\/(\d+)$/, (bi) => {
   <section class="panel center-panel">
     ${b.items.length > 1 ? `<p class="label accent">${esc(ex.name)}</p>` : ''}
     <p class="set-big mono">Satz ${setNo}<span>/${it.sets}</span></p>
-    ${editWeight ? weightStepper(bi, b.pos, it) : `<button class="weight-show" data-act="toggleWeight"><span class="mono">${it.w ? `${num(it.w, 2)} kg` : ex.bw ? 'Körpergewicht' : 'ohne Gewicht'}</span><span class="link">ändern</span></button>`}
+    ${editWeight ? weightStepper(bi, b.pos, it) : `<button class="weight-show" data-act="toggleWeight"><span class="mono">${it.w ? `${num(it.w, 2)} kg` : ex.eq === 'bw' ? 'Körpergewicht' : 'ohne Gewicht'}</span><span class="link">ändern</span></button>`}
     <p class="muted small">Ziel ${fmtReps(it.reps)} ${ex.timed ? 'Sekunden' : 'Wdh.'}</p>
   </section>
   <button class="btn primary block xl" data-act="setDone" data-b="${bi}">Satz fertig</button>
@@ -403,12 +422,11 @@ function begin(u) {
 }
 
 defineActions({
-  trWeek(el) {
-    ws = addDays(ws, Number(el.dataset.n));
-    update();
-  },
   dayMenu(el) {
-    const i = Number(el.dataset.i);
+    const date = el.dataset.date;
+    ws = weekStart(date);
+    anchorWs = ws;
+    const i = dayIndex(date);
     openSheet(() => dayMenuSheet(i));
   },
   moveDay(el) {
@@ -429,6 +447,7 @@ defineActions({
   },
   resetWeek() {
     resetWeek(ws);
+    closeSheet();
     update();
   },
   scheduleSheet() {
@@ -517,7 +536,8 @@ defineActions({
   },
   customExercise(form) {
     const fd = new FormData(form);
-    const ex = { id: `c-${uid()}`, name: fd.get('name').trim(), m: [fd.get('muscle')], s: [], inc: 2.5 };
+    const eq = fd.get('eq') || 'free';
+    const ex = { id: `c-${uid()}`, name: fd.get('name').trim(), m: [fd.get('muscle')], s: [], inc: 2.5, eq, bw: eq === 'bw' };
     if (!ex.name) return;
     state.customExercises.push(ex);
     addExercise(ex.id);

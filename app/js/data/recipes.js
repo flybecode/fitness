@@ -1,6 +1,6 @@
 // Rezepte für eine Grundportion. items: [Lebensmittel-ID, Gramm].
 // Nährwerte werden aus foods.js berechnet und beim Planen auf den Bedarf skaliert.
-// cat: fruehstueck | haupt | snack   diet: alles | veg | vegan
+// cat: fruehstueck | haupt | snack | shake   diet: alles | veg | vegan   prep: gut zum Vorkochen
 
 export const RECIPES = [
   // Frühstück
@@ -159,7 +159,7 @@ export const RECIPES = [
     steps: ['Einpacken, mitnehmen.'],
   },
   {
-    id: 'proteinshake', name: 'Proteinshake mit Banane', cat: 'snack', diet: 'veg', min: 2,
+    id: 'proteinshake', name: 'Proteinshake mit Banane', cat: 'shake', diet: 'veg', min: 2,
     items: [['whey', 30], ['milch', 250], ['banane', 120]],
     steps: ['Alles im Mixer oder Shaker mixen.'],
   },
@@ -222,6 +222,37 @@ RECIPES.push(
     id: 'protein-oats', name: 'Protein-Overnight-Oats (für mehrere Tage)', cat: 'fruehstueck', diet: 'veg', min: 5, prep: true,
     items: [['haferflocken', 60], ['skyr', 150], ['milch', 100], ['whey', 15], ['beeren', 80]],
     steps: ['Alles außer den Beeren verrühren und auf Gläser verteilen.', 'Im Kühlschrank halten sich die Gläser 3–4 Tage.', 'Morgens Beeren darauf.'],
+  },
+  {
+    id: 'shake-schoko-erdnuss', name: 'Schoko-Erdnuss-Shake', cat: 'shake', diet: 'veg', min: 3,
+    items: [['whey', 30], ['milch', 300], ['banane', 120], ['erdnussbutter', 15], ['kakao', 5]],
+    steps: ['Alles mit ein paar Eiswürfeln im Mixer cremig mixen.'],
+  },
+  {
+    id: 'shake-beeren', name: 'Beeren-Skyr-Shake', cat: 'shake', diet: 'veg', min: 3,
+    items: [['whey', 25], ['beeren', 150], ['skyr', 150], ['milch', 200]],
+    steps: ['Gefrorene Beeren mit Skyr, Milch und Proteinpulver mixen.'],
+  },
+  {
+    id: 'shake-gainer', name: 'Hafer-Gainer-Shake', cat: 'shake', diet: 'veg', min: 3,
+    items: [['haferflocken', 60], ['milch', 400], ['whey', 40], ['banane', 120], ['erdnussbutter', 20]],
+    steps: ['Haferflocken zuerst fein mixen, dann die restlichen Zutaten dazu.', 'Ideal nach dem Training oder wenn du schwer auf deine Kalorien kommst.'],
+  },
+  {
+    id: 'shake-vegan-schoko', name: 'Veganer Schoko-Shake', cat: 'shake', diet: 'vegan', min: 3,
+    items: [['protein-vegan', 30], ['sojadrink', 300], ['banane', 120], ['kakao', 5], ['haferflocken', 30]],
+    steps: ['Alles im Mixer cremig mixen.'],
+  },
+  {
+    id: 'shake-vanille-quark', name: 'Vanille-Quark-Shake', cat: 'shake', diet: 'veg', min: 3,
+    items: [['magerquark', 200], ['milch', 200], ['banane', 120], ['honig', 10]],
+    extra: 'Vanille, Zimt',
+    steps: ['Alles mixen. Viel Protein ganz ohne Pulver.'],
+  },
+  {
+    id: 'shake-gruen', name: 'Grüner Mango-Shake', cat: 'shake', diet: 'veg', min: 4,
+    items: [['spinat', 50], ['mango', 120], ['banane', 100], ['joghurt-light', 150], ['whey', 20]],
+    steps: ['Spinat mit etwas Wasser vormixen, dann Obst, Joghurt und Pulver dazu.'],
   },
   {
     id: 'pudding-beeren', name: 'Proteinpudding mit Beeren', cat: 'snack', diet: 'veg', min: 1,

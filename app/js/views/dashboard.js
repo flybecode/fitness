@@ -6,7 +6,7 @@ import { weekDays, muscleBalance } from '../training.js';
 import { weeklySeries, weightTrend, checkThisWeek } from '../progress.js';
 import { icon } from '../icons.js';
 import { label, sparkline, badge, ring } from '../ui.js';
-import { weekStrip, todayAction, insightList } from './training.js';
+import { weekScroller, todayAction, insightList } from './training.js';
 import { checkPanel, fmtRate } from './progress.js';
 
 defineRoute(/^#\/dashboard$/, () => {
@@ -31,10 +31,9 @@ defineRoute(/^#\/dashboard$/, () => {
 
   ${todayAction()}
 
-  <a class="panel block-link" href="#/training">
-    ${label('Diese Woche')}
-    ${weekStrip(ws, { interactive: false })}
-  </a>
+  <section class="panel cal">
+    ${weekScroller({ interactive: false })}
+  </section>
 
   <div class="stat-grid">
     <a class="panel stat" href="#/training">
@@ -61,7 +60,7 @@ defineRoute(/^#\/dashboard$/, () => {
   </div>
 
   ${checkThisWeek() ? '' : checkPanel()}
-  ${insightList(3)}
+  ${insightList(3, 'hinweise-dashboard')}
 
   <a class="panel block-link" href="#/ernaehrung">
     ${label(`<span class="stat-head" style="margin:0">${badge('bowl', 'orange')}<span>Essen diese Woche</span></span>`, `<span class="label">${open > 0 ? `${open} auf der Einkaufsliste` : ''}</span>`)}
